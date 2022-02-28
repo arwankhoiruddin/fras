@@ -1,0 +1,5 @@
+package fras;
+
+public enum FuzzyMethod {
+    FREEDISKLOW, FREEDISKHIGH, FREELINKLOW, FREELINKHIGH, FREEMEMLOW, FREEMEMHIGH;
+}
