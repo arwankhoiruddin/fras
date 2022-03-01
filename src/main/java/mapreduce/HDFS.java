@@ -30,7 +30,7 @@ public class HDFS {
      */
     public static void put() {
         // split the data into blocks
-        Log.debug("Block size: " + MRConfigs.blockSize);
+        Log.debug("Block size: " + MRConfigs.blockSize + " MB");
         LinkedList<Block> blocks = new LinkedList<>();
         for (int userID=0; userID< Cluster.users.length; userID++) {
             int numBlocks = Functions.getNumberOfBlocks(Cluster.users[userID].getDataSize());

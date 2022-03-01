@@ -19,7 +19,7 @@ public class MapReduce {
 
         int jobID = 0;
         for (int i=0; i<MRConfigs.numNodes; i++) {
-            LinkedList<Block> data = Cluster.nodes[i].getData();
+            LinkedList<Block> data = Cluster.nodes[i].getDisk().getBlocks();
 
             // create job based on the block's userID
             for (int j=0; j<data.size(); j++) {
@@ -42,7 +42,7 @@ public class MapReduce {
 
         for (int i=0; i<MRConfigs.numNodes; i++) {
             LinkedList<Job> jobs = Cluster.nodes[i].getJobs();
-            LinkedList<Block> data = Cluster.nodes[i].getData();
+            LinkedList<Block> data = Cluster.nodes[i].getDisk().getBlocks();
             Log.debug("Node number: " + i + " has " + Cluster.nodes[i].getJobs().size() + " map jobs and " + Cluster.nodes[i].getData().size() + " data");
 
             int[] nData = new int[MRConfigs.numUsers];
