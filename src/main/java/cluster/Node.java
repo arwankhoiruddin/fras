@@ -14,7 +14,6 @@ public class Node {
     private double cpu;
     private Disk disk;
     private LinkedList<Job> jobs;
-    private LinkedList<Block> blocks;
     private Map<Integer, Link> links = new HashMap<>();
     private LinkedList data = new LinkedList();
 
@@ -24,7 +23,6 @@ public class Node {
         this.cpu = cpu;
         this.disk = disk;
         this.jobs = new LinkedList<>();
-        this.blocks = new LinkedList<>();
     }
 
     public int getNodeID() {
@@ -60,11 +58,7 @@ public class Node {
     }
 
     public void addBlock(Block block) {
-        this.blocks.add(block);
-    }
-
-    public void addData(Object data) {
-        this.data.add(data);
+        this.disk.addBlock(block);
     }
 
     public void runJob() {
@@ -91,7 +85,7 @@ public class Node {
 
         Block block = (Block) data;
         Log.debug("Data belongs to user number " + block.getUserID());
-        Cluster.nodes[destination].addData(block);
+        Cluster.nodes[destination].getDisk().addBlock(block);
 
         for (int i=0; i<timeToTransfer; i++) {
             Time.times.get(this.nodeID).get(0).add(Status.SEND_DATA);

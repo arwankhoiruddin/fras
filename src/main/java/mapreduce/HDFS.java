@@ -33,9 +33,9 @@ public class HDFS {
         Log.debug("Block size: " + MRConfigs.blockSize);
         LinkedList<Block> blocks = new LinkedList<>();
         for (int userID=0; userID< Cluster.users.length; userID++) {
-            int numBlocks = (int) Math.ceil(Cluster.users[userID].getDataSize()*1024 / MRConfigs.blockSize);
+            int numBlocks = Functions.getNumberOfBlocks(Cluster.users[userID].getDataSize());
 
-            if (MRConfigs.replicationStrategy == ReplicationStrategy.REPLICATION) numBlocks *= 3;
+            if (MRConfigs.replicationStrategy == ReplicationStrategy.REPLICATION) numBlocks *= 3; // use the default number of block replica
 
             Log.debug("User ID: " + userID + ", Data size: " + Cluster.users[userID].getDataSize() + " GB, number of blocks: " + numBlocks);
             for (int blkNum=0; blkNum < numBlocks; blkNum++) {

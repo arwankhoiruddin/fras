@@ -46,6 +46,7 @@ public class MapRedRunner {
         Functions.printArray(cpuLoads);
         Functions.printArray(ioLoads);
 
+        // job characteristic for each user
         for (int user=0; user < userData.length; user++) {
             Cluster.users[user] = new User(user, userData[user]);
             Cluster.users[user].setCpuLoad(cpuLoads[user]);

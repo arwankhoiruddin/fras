@@ -1,5 +1,7 @@
 package common;
 
+import cluster.Cluster;
+
 import java.io.PrintWriter;
 import java.util.LinkedList;
 
@@ -158,6 +160,10 @@ public class Functions {
         chart.addData(dataName, xData, yData);
         chart.addData("Average", xData, aveData);
         chart.showChart();
+    }
+
+    public static int getNumberOfBlocks(double dataSize) {
+        return (int) Math.ceil(dataSize*1024 / MRConfigs.blockSize);
     }
 
     public static int[][] convolution(int[][] a) {
