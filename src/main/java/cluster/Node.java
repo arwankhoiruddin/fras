@@ -16,6 +16,7 @@ public class Node {
     private LinkedList<Job> jobs;
     private Map<Integer, Link> links = new HashMap<>();
     private LinkedList data = new LinkedList();
+    private boolean reachable = true;
 
     public Node(int nodeID, double ram, double cpu, Disk disk) {
         this.nodeID = nodeID;
@@ -23,6 +24,10 @@ public class Node {
         this.cpu = cpu;
         this.disk = disk;
         this.jobs = new LinkedList<>();
+    }
+
+    public boolean isReachable() {
+        return this.reachable;
     }
 
     public int getNodeID() {

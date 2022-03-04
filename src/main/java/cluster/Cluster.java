@@ -1,6 +1,7 @@
 package cluster;
 
 import common.MRConfigs;
+import mapreduce.*;
 
 import java.util.LinkedList;
 
@@ -8,6 +9,7 @@ public class Cluster {
     public static Node[] nodes = new Node[MRConfigs.numNodes];
     public static User[] users = new User[MRConfigs.numUsers];
     public static int numBlocks;
+    public static HeartBeat heartBeat;
 
     public Cluster() {
         // init nodes
