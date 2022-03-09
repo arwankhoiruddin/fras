@@ -1,6 +1,5 @@
 package mapreduce;
 
-import cluster.Block;
 import cluster.Cluster;
 import common.Functions;
 import common.Log;
@@ -52,7 +51,8 @@ public class MapReduce {
             if (nodeNum == MRConfigs.numNodes) nodeNum = 1;
         }
 
-        // run the jobs
+        // schedule the job on each heartbeat
+        HeartBeat heartBeat = new HeartBeat();
 
         Log.debug("List of jobs and blocks in each node");
         int[] countData = new int[MRConfigs.numUsers];

@@ -2,6 +2,7 @@ package cluster;
 
 import common.Log;
 import common.MRConfigs;
+import mapreduce.Block;
 import mapreduce.Job;
 
 import java.util.HashMap;
@@ -11,23 +12,32 @@ import java.util.Map;
 public class Node {
     private int nodeID;
     private double ram;
-    private double cpu;
+    private int cpu;
     private Disk disk;
     private LinkedList<Job> jobs;
     private Map<Integer, Link> links = new HashMap<>();
     private LinkedList data = new LinkedList();
     private boolean reachable = true;
 
-    public Node(int nodeID, double ram, double cpu, Disk disk) {
+    // loads on certain time
+    private double[] cpuLoads;
+    private double memoryloads;
+
+    public Node(int nodeID, double ram, int cpu, Disk disk) {
         this.nodeID = nodeID;
         this.ram = ram;
         this.cpu = cpu;
         this.disk = disk;
         this.jobs = new LinkedList<>();
+        this.cpuLoads = new double[cpu];
     }
 
     public boolean isReachable() {
         return this.reachable;
+    }
+
+    public void setReachable(boolean reachable) {
+        this.reachable = reachable;
     }
 
     public int getNodeID() {
@@ -44,6 +54,24 @@ public class Node {
 
     public Disk getDisk() {
         return disk;
+    }
+
+    public double getFreeRam() {
+        return this.ram - memoryloads;
+    }
+
+    public double[] getFreeCPU() {
+        // to do
+        double[] free = new double[this.cpu];
+        for (int i=0; i<this.cpu; i++) {
+            free[i] = 1 - cpuLoads[i]; //
+        }
+        return free;
+    }
+
+    public double getFreeDisk() {
+        // to do
+        return 1;
     }
 
     public Link getLink(int destination) {
@@ -75,8 +103,21 @@ public class Node {
         // T_D = data transfer time
         // T_E = execution time
         // T_O = system overhead time
-        double timeToRun = this.cpu*1024*1024 * Cluster.users[this.jobs.removeFirst().getUserID()].getCpuLoad();
-        Log.display("Time to run the job: " + timeToRun);
+//        double timeToRun = this.cpu*1024*1024 * Cluster.users[this.jobs.removeFirst().getUserID()].getCpuLoad();
+//        Log.display("Time to run the job: " + timeToRun);
+
+        // each vCPU core can run a job
+        double memLoads = 0;
+
+        for (int i=0; i<this.cpu; i++) {
+            Job jobRun = jobs.removeFirst();
+            cpuLoads[i] = jobRun.getCpuLoad();
+            memLoads += jobRun.getIOLoad();
+        }
+
+        this.memoryloads = memLoads;
+
+        // add the job run to timeline
     }
 
     public LinkedList getData() {

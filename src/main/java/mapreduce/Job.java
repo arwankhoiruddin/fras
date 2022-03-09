@@ -3,7 +3,7 @@ package mapreduce;
 public class Job {
     private int jobID;
     private int userID;
-    private double IOLoad;
+    private double IOLoad; // refers to RAM IO Bound
     private double cpuLoad;
 
     public Job(int jobID, int userID, double IOLoad, double cpuLoad) {

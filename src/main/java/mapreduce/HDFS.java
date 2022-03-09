@@ -1,9 +1,6 @@
 package mapreduce;
 
-import cluster.Block;
 import cluster.Cluster;
-import cluster.Status;
-import cluster.Time;
 import common.Functions;
 import common.Log;
 import common.MRConfigs;

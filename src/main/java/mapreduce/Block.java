@@ -1,9 +1,9 @@
-package cluster;
+package mapreduce;
 
-public class Parity {
+public class Block extends MRData {
     private int userID;
 
-    public Parity(int userID) {
+    public Block(int userID) {
         this.userID = userID;
     }
 

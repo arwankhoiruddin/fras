@@ -6,6 +6,7 @@ public class MRConfigs {
     public static boolean displayLog = true;
     public static boolean debugLog = true;
     public static boolean randomData = false;
+    public static boolean simulateClusterProblems = false;
 
     public static int numUsers = 4;
     public static ReplicationStrategy replicationStrategy = ReplicationStrategy.REPLICATION;
