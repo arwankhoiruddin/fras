@@ -37,6 +37,13 @@ public class Disk {
         this.diskSpace -= (MRConfigs.blockSize / 2);
     }
 
+    public void addIntermediary(Intermediary intermediary) {
+        // add intermediary into disk data
+        data.add(intermediary);
+        // adjust the disk space
+        this.diskSpace -= intermediary.getSize();
+    }
+
     public void removeBlock(Block block) {
         if (data.contains(block)) {
             data.remove(block);

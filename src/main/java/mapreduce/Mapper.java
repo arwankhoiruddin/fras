@@ -1,13 +1,9 @@
 package mapreduce;
 
-public class Mapper {
-    private int taskID;
+public class Mapper extends Job {
 
-    public Mapper(int taskID) {
-        this.taskID = taskID;
+    public Mapper(int jobID, int userID, double IOLoad, double cpuLoad, double jobLength) {
+        super(jobID, userID, IOLoad, cpuLoad, jobLength);
     }
 
-    public int getTaskID() {
-        return taskID;
-    }
 }

@@ -2,8 +2,7 @@ package cluster;
 
 import common.Log;
 import common.MRConfigs;
-import mapreduce.Block;
-import mapreduce.Job;
+import mapreduce.*;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -110,28 +109,53 @@ public class Node {
         double memLoads = 0;
 
         for (int i=0; i<this.cpu; i++) {
-            Job jobRun = jobs.removeFirst();
-            cpuLoads[i] = jobRun.getCpuLoad();
-            memLoads += jobRun.getIOLoad();
+            if (jobs.size() > 0) {
+                Job jobRun = jobs.removeLast();
+                cpuLoads[i] = jobRun.getCpuLoad();
+                memLoads += jobRun.getIOLoad();
+
+                // add the job run to timeline, as much as the job time
+                for (int t=0; t<jobRun.getJobLength(); t++) {
+                    if (jobRun instanceof Mapper)
+                        Time.times.get(this.nodeID).get(i).add(Status.RUN_MAP);
+                    else if (jobRun instanceof Reducer)
+                        Time.times.get(this.nodeID).get(i).add(Status.RUN_REDUCE);
+                    else if (jobRun instanceof Shuffle)
+                        Time.times.get(this.nodeID).get(i).add(Status.RUN_SHUFFLE);
+                    else
+                        Time.times.get(this.nodeID).get(i).add(Status.RUN_SORT);
+                }
+            }
         }
 
         this.memoryloads = memLoads;
 
-        // add the job run to timeline
+
+
     }
 
-    public LinkedList getData() {
-        return this.data;
-    }
+    public void sendData(int destination, MRData data) {
 
-    public void sendData(int destination, Object data) {
+        double timeToTransfer = 0;
 
-        double timeToTransfer = Math.ceil(this.getLink(destination).getLinkSpeed() / MRConfigs.blockSize);
-        Log.debug("Time to transfer from node " + this.nodeID + " to " + destination + " is " + timeToTransfer + " seconds");
-
-        Block block = (Block) data;
-        Log.debug("Data belongs to user number " + block.getUserID());
-        Cluster.nodes[destination].getDisk().addBlock(block);
+        if (data instanceof Block) {
+            Block block = (Block) data;
+            Log.debug("Data belongs to user number " + block.getUserID());
+            Cluster.nodes[destination].getDisk().addBlock(block);
+            timeToTransfer = Math.ceil(this.getLink(destination).getLinkSpeed() / MRConfigs.blockSize);
+            Log.debug("Time to transfer from node " + this.nodeID + " to " + destination + " is " + timeToTransfer + " seconds");
+        } else if (data instanceof Parity) {
+            Parity parity = (Parity) data;
+            Log.debug("Data belongs to user number " + parity.getUserID());
+            Cluster.nodes[destination].getDisk().addParity(parity);
+            timeToTransfer = Math.ceil(this.getLink(destination).getLinkSpeed() / (MRConfigs.blockSize * 2)); // size of parity is half of the size of block
+            Log.debug("Time to transfer from node " + this.nodeID + " to " + destination + " is " + timeToTransfer + " seconds");
+        } else if (data instanceof Intermediary) {
+            Intermediary intermediary = (Intermediary) data;
+            Cluster.nodes[destination].getDisk().addIntermediary(intermediary);
+            timeToTransfer = Math.ceil(this.getLink(destination).getLinkSpeed() / intermediary.getSize());
+            Log.debug("Time to transfer from node " + this.nodeID + " to " + destination + " is " + timeToTransfer + " seconds");
+        }
 
         for (int i=0; i<timeToTransfer; i++) {
             Time.times.get(this.nodeID).get(0).add(Status.SEND_DATA);

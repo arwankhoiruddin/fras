@@ -1,14 +1,9 @@
 package mapreduce;
 
-public class Sort {
-    private int taskID;
+public class Sort extends Job {
 
-    public Sort(int taskID) {
-        this.taskID = taskID;
-    }
-
-    public int getTaskID() {
-        return taskID;
+    public Sort(int jobID, int userID, double IOLoad, double cpuLoad, double jobLength) {
+        super(jobID, userID, IOLoad, cpuLoad, jobLength);
     }
 
 }

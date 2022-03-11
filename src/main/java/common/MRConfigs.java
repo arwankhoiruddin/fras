@@ -15,6 +15,7 @@ public class MRConfigs {
     public static int vCpuPerNodes = 4;
     public static int ramPerNodes = 16;
     public static int diskSpacePerNodes = 60;
+    public static boolean isHomogeneous = true;
 
     public static double blockSize = 64;
 }

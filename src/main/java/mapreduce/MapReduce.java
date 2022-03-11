@@ -38,7 +38,7 @@ public class MapReduce {
             // create job based on the block's userID
             for (int j=0; j<data.size(); j++) {
                 int userID = data.get(j).getUserID();
-                Job job = new Job(jobID++, userID, Cluster.users[userID].getCpuLoad(), Cluster.users[userID].getIoLoad());
+                Job job = new Job(jobID++, userID, Cluster.users[userID].getCpuLoad(), Cluster.users[userID].getIoLoad(), 20);
 
                 // should also model the heartbeat
 

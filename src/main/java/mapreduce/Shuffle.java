@@ -1,14 +1,9 @@
 package mapreduce;
 
-public class Shuffle {
-    private int taskID;
+public class Shuffle extends Job {
 
-    public Shuffle(int taskID) {
-        this.taskID = taskID;
-    }
-
-    public int getTaskID() {
-        return taskID;
+    public Shuffle(int jobID, int userID, double IOLoad, double cpuLoad, double jobLength) {
+        super(jobID, userID, IOLoad, cpuLoad, jobLength);
     }
 
 }

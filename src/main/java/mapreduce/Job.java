@@ -5,12 +5,14 @@ public class Job {
     private int userID;
     private double IOLoad; // refers to RAM IO Bound
     private double cpuLoad;
+    private double jobLength;
 
-    public Job(int jobID, int userID, double IOLoad, double cpuLoad) {
+    public Job(int jobID, int userID, double IOLoad, double cpuLoad, double jobLength) {
         this.jobID = jobID;
         this.userID = userID;
         this.IOLoad = IOLoad;
         this.cpuLoad = cpuLoad;
+        this.jobLength = jobLength;
     }
 
     public int getJobID() {
@@ -28,4 +30,6 @@ public class Job {
     public double getCpuLoad() {
         return cpuLoad;
     }
+
+    public double getJobLength() { return this.jobLength; }
 }
