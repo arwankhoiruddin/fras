@@ -11,6 +11,7 @@ public class User {
     public User(int userID, double dataSize) {
         this.userID = userID;
         this.dataSize = dataSize;
+        Cluster.users[userID] = this;
     }
 
     public int getUserID() {
@@ -35,5 +36,9 @@ public class User {
 
     public double getDataSize() {
         return this.dataSize;
+    }
+
+    public void setDataSize(double dataSize) {
+        this.dataSize = dataSize;
     }
 }

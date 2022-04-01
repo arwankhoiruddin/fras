@@ -10,19 +10,20 @@ import java.util.Map;
 
 public class Node {
     private int nodeID;
-    private double ram;
+    private int ram;
     private int cpu;
     private Disk disk;
     private LinkedList<Job> jobs;
     private Map<Integer, Link> links = new HashMap<>();
     private LinkedList data = new LinkedList();
     private boolean reachable = true;
+    private Switch connectedSwitch;
 
     // loads on certain time
     private double[] cpuLoads;
     private double memoryloads;
 
-    public Node(int nodeID, double ram, int cpu, Disk disk) {
+    public Node(int nodeID, int cpu, int ram, Disk disk) {
         this.nodeID = nodeID;
         this.ram = ram;
         this.cpu = cpu;
@@ -78,7 +79,11 @@ public class Node {
     }
 
     public void setLink(int destination, LinkType linkType) {
+        // connect to switch
+
         links.put(destination, new Link(linkType));
+        // two ways
+        Cluster.nodes[destination].links.put(this.nodeID, new Link(linkType));
     }
 
     public void addJob(Job job) {
@@ -91,6 +96,10 @@ public class Node {
 
     public void addBlock(Block block) {
         this.disk.addBlock(block);
+    }
+
+    public Switch getConnectedSwitch() {
+        return this.connectedSwitch;
     }
 
     public void runJob() {
@@ -129,9 +138,32 @@ public class Node {
         }
 
         this.memoryloads = memLoads;
+    }
 
+    public void sendData(Node node, MRData data) {
+        double timeToTransfer = 0;
+        double dataSize = 0;
+        if (data instanceof Block) {
+            dataSize = MRConfigs.blockSize;
+            node.getDisk().addBlock((Block) data);
+        } else if (data instanceof Parity) {
+            dataSize = MRConfigs.blockSize / 2;
+            node.getDisk().addParity((Parity) data);
+        } else if (data instanceof Intermediary) {
+            node.getDisk().addIntermediary((Intermediary) data);
+            dataSize = ((Intermediary) data).getSize();
+        }
 
+        // find the destination node
+        if (this.connectedSwitch.nodes.contains(node)) {
+            timeToTransfer = 2 * dataSize / this.connectedSwitch.getLinkSpeed();
+        } else {
+            timeToTransfer = (dataSize / this.connectedSwitch.getLinkSpeed()) +
+                    ( 2 * (dataSize / this.connectedSwitch.parentSwitch.getLinkSpeed())) +
+                    (dataSize / node.connectedSwitch.getLinkSpeed());
+        }
 
+        Log.debug("Time to transfer from node " + this.nodeID + " to " + node.nodeID + " is " + timeToTransfer + " seconds");
     }
 
     public void sendData(int destination, MRData data) {
@@ -164,5 +196,10 @@ public class Node {
                 Time.times.get(destination).get(j).add(Status.RECEIVE_DATA);
             }
         }
+    }
+
+    public void connectSwitch(Switch connectedSwitch) {
+        this.connectedSwitch = connectedSwitch;
+        connectedSwitch.connectNode(this);
     }
 }

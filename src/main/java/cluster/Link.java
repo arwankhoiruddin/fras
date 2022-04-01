@@ -17,6 +17,6 @@ public class Link {
             default:
                 throw new IllegalArgumentException("Unknown link type");
         }
-        return linkSpeed;
+        return (linkSpeed / 8); // convert from bit to byte
     }
 }

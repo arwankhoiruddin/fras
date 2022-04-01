@@ -10,6 +10,7 @@ public class Cluster {
     public static User[] users = new User[MRConfigs.numUsers];
     public static int numBlocks;
     public static HeartBeat heartBeat;
+    public static LinkedList liveNodes = new LinkedList();
 
     public Cluster() {
         // init nodes
@@ -17,10 +18,26 @@ public class Cluster {
             nodes[i] = new Node(i, MRConfigs.ramPerNodes, MRConfigs.vCpuPerNodes, new Disk(SataType.SATA3, MRConfigs.diskSpacePerNodes));
         }
 
-        // init links
+        // init links --> Hadoop assumes that the topology used is tree topology
+        // so we will divide the nodes into two racks
+        int nodePerRack = MRConfigs.numNodes / 2;
+
+        // main switch
+        Switch mainSwitch = new Switch(0, LinkType.TENGIGABIT);
+
+        // switches for racks
+        Switch switch1 = new Switch(1, LinkType.GIGABIT);
+        Switch switch2 = new Switch(2, LinkType.GIGABIT);
+        switch1.connectParentSwitch(mainSwitch);
+        switch2.connectParentSwitch(mainSwitch);
+
         for (int i=0; i<MRConfigs.numNodes; i++) {
-            for (int j=0; j<MRConfigs.numNodes; j++) {
-                nodes[i].setLink(j, LinkType.GIGABIT);
+            if (i < nodePerRack) {
+                // first rack
+                nodes[i].connectSwitch(switch1);
+            } else {
+                // second rack
+                nodes[i].connectSwitch(switch2);
             }
         }
 

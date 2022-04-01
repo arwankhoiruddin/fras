@@ -1,6 +1,9 @@
 package common;
 
+import fifo.FifoScheduler;
+import fras.FRAS;
 import mapreduce.ReplicationStrategy;
+import yarn.Scheduler;
 
 public class MRConfigs {
     public static boolean displayLog = true;
@@ -18,4 +21,6 @@ public class MRConfigs {
     public static boolean isHomogeneous = true;
 
     public static double blockSize = 64;
+
+    public static Scheduler scheduler = new FRAS();
 }

@@ -54,9 +54,11 @@ public class MapRedRunner {
         }
 
         // put the data into HDFS
+        // should be made per user
         HDFS.put();
 
         // schedule and run MapReduce
+        // should be made per user at certain time
         MapReduce.MRRun();
     }
 }

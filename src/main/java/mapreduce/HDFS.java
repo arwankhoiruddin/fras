@@ -55,4 +55,34 @@ public class HDFS {
             Cluster.nodes[0].sendData(nodeNumber, blocks.get(blockNum));
         }
     }
+
+    public static void put(int userID) {
+        // split the data into blocks
+        Log.debug("Block size: " + MRConfigs.blockSize + " MB");
+        LinkedList<Block> blocks = new LinkedList<>();
+
+        int numBlocks = Functions.getNumberOfBlocks(Cluster.users[userID].getDataSize());
+
+        if (MRConfigs.replicationStrategy == ReplicationStrategy.REPLICATION) numBlocks *= 3; // use the default number of block replica
+
+        Log.debug("User ID: " + userID + ", Data size: " + Cluster.users[userID].getDataSize() + " GB, number of blocks: " + numBlocks);
+        for (int blkNum=0; blkNum < numBlocks; blkNum++) {
+            Block newBlock = new Block(userID);
+            blocks.add(newBlock);
+        }
+
+        Cluster.numBlocks = blocks.size();
+        Log.debug("Total number of blocks: " + blocks.size());
+
+        // spread the blocks into the cluster
+        for (int blockNum=0; blockNum<blocks.size(); blockNum++) {
+            int nodeNumber = 1 + new Random().nextInt(MRConfigs.numNodes - 1);
+            Log.debug("Sending block number " + blockNum + " owned by user " + blocks.get(blockNum).getUserID() +  " to node number " + nodeNumber);
+
+            // to be added
+            // the parity is placed in different node/rack
+            // here, we might be able to incorporate the Graph Neural Network to effectively place the blocks in the cluster
+            Cluster.nodes[0].sendData(Cluster.nodes[nodeNumber], blocks.get(blockNum));
+        }
+    }
 }

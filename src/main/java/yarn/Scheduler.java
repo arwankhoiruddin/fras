@@ -4,13 +4,10 @@ import mapreduce.Job;
 
 import java.util.LinkedList;
 
-public class Scheduler {
-    private LinkedList<Job> jobs;
-    public void addJob(Job job) {
-        jobs.add(job);
+public class Scheduler implements JobScheduler {
+
+    public LinkedList<Job> scheduleJob(LinkedList<Job> jobs) {
+        return null;
     }
 
-    public Job getNextJob() {
-        return jobs.removeFirst();
-    }
 }

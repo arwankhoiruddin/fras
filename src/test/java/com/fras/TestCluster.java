@@ -2,20 +2,39 @@ package com.fras;
 
 import cluster.*;
 import common.Functions;
+import common.Log;
 import common.MRConfigs;
+import fifo.FifoScheduler;
+import late.LATEScheduler;
 import mapreduce.*;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import yarn.Scheduler;
 
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.Random;
 
 public class TestCluster {
 
     @BeforeAll
     public static void setUp() {
         new Cluster();
+    }
+
+    @Test
+    public void testClusterRackNodes() {
+        assert Cluster.nodes[1].getConnectedSwitch().nodes.size() == 4;
+        assert Cluster.nodes[5].getConnectedSwitch().nodes.size() == 4;
+        assert Cluster.nodes[1].getConnectedSwitch().parentSwitch.switches.size() == 2;
+    }
+
+    @Test
+    public void testClusterSwitch() {
+        assert Cluster.nodes[1].getConnectedSwitch().parentSwitch.getSwitchID() == 0;
+        assert Cluster.nodes[1].getConnectedSwitch().getSwitchID() == 1;
+        assert Cluster.nodes[6].getConnectedSwitch().getSwitchID() == 2;
     }
 
     @Test
@@ -55,6 +74,14 @@ public class TestCluster {
         assert node.getRam() == 4;
         assert node.getDisk().getDiskSpace() == 102400;
         assert node.getDisk().getDiskSpeed() == 600;
+    }
+
+    @Test
+    public void testNodeLink() {
+        Node n1 = new Node(0, 10, 4, new Disk(SataType.SATA1, 50));
+        Node n2 = new Node(1, 10, 3, new Disk(SataType.SATA3, 100));
+        n1.setLink(1, LinkType.TENGIGABIT);
+
     }
 
     @Test
@@ -155,5 +182,179 @@ public class TestCluster {
         Cluster.nodes[0].runJob();
         assert Time.times.get(numNode).get(numVCore).size() == 20;
         assert Time.times.get(numNode).get(numVCore).get(0) == Status.RUN_SORT;
+    }
+
+    @Test
+    public void testTimeLine() {
+
+    }
+
+    @Test
+    public void testHeartbeat() {
+
+        double[] userData = new double[MRConfigs.numUsers];
+        double[] cpuLoads = new double[MRConfigs.numUsers];
+        double[] ioLoads = new double[MRConfigs.numUsers];
+
+        for (int i=0; i< MRConfigs.numUsers; i++) {
+            if (MRConfigs.randomData) {
+                userData[i] = (1 + new Random().nextInt(4)) * (10 ^ new Random().nextInt(2));
+                cpuLoads[i] = new Random().nextDouble();
+                ioLoads[i] = new Random().nextDouble();
+            } else {
+                double[] initUserData = {10, 40, 5, 80, 2, 160, 20, 40};
+                double[] initCPU = {0.5, 0.3, 0.8, 0.1, 0.9, 0.3, 0.4, 0.7};
+                double[] initIO = {0.5, 0.7, 0.6, 0.3, 0.9, 0.1, 0.3, 0.9};
+
+                userData[i] = initUserData[i];
+                cpuLoads[i] = initCPU[i];
+                ioLoads[i] = initIO[i];
+            }
+        }
+
+        // job characteristic for each user
+        for (int user=0; user < userData.length; user++) {
+            Cluster.users[user] = new User(user, userData[user]);
+            Cluster.users[user].setCpuLoad(cpuLoads[user]);
+            Cluster.users[user].setIoLoad(ioLoads[user]);
+        }
+
+        HDFS.put();
+        HeartBeat heartBeat = new HeartBeat();
+        // emulate that some nodes are unreachable
+        Cluster.nodes[1].setReachable(false);
+        Cluster.nodes[4].setReachable(false);
+        heartBeat.sendHeartBeat();
+        assert Cluster.liveNodes.size() == (MRConfigs.numNodes - 2);
+    }
+
+    @Test
+    public void testFIFOScheduler() {
+        MRConfigs.scheduler = new FifoScheduler();
+
+        Job job1 = new Job(0, 0, 0.5, 0.7, 100);
+        Job job2 = new Job(1, 0, 0.3, 0.5, 500);
+
+        LinkedList<Job> jobs = new LinkedList<>();
+        jobs.add(job1);
+        jobs.add(job2);
+
+        Scheduler scheduler = MRConfigs.scheduler;
+        LinkedList<Job> scheduledJobs = scheduler.scheduleJob(jobs);
+
+        assert scheduledJobs.removeFirst().getJobID() == 0;
+        assert scheduledJobs.removeFirst().getJobID() == 1;
+
+    }
+
+    @Test
+    public void testLATEScheduler() {
+        MRConfigs.scheduler = new LATEScheduler();
+
+        Job job1 = new Job(0, 0, 0.5, 0.7, 275);
+        Job job2 = new Job(1, 0, 0.3, 0.5, 500);
+        Job job3 = new Job(2, 0, 0.3, 0.8, 300);
+
+        LinkedList<Job> jobs = new LinkedList<>();
+        jobs.add(job1);
+        jobs.add(job2);
+        jobs.add(job3);
+
+        Scheduler scheduler = MRConfigs.scheduler;
+        LinkedList<Job> scheduledJobs = scheduler.scheduleJob(jobs);
+
+        assert scheduledJobs.removeFirst().getJobID() == 0;
+        assert scheduledJobs.removeFirst().getJobID() == 2;
+        assert scheduledJobs.removeFirst().getJobID() == 1;
+
+    }
+
+    @Test
+    public void testGigabit() {
+        Switch s = new Switch(0, LinkType.GIGABIT);
+        assert s.getLinkSpeed() == (1000 / 8);
+    }
+
+    @Test
+    public void testConnectSwitch() {
+        Switch aSwitch = new Switch(0, LinkType.GIGABIT);
+
+        Node node1 = new Node(0, 12, 4, new Disk(SataType.SATA1, 60));
+        Node node2 = new Node(0, 12, 4, new Disk(SataType.SATA1, 60));
+
+        node1.connectSwitch(aSwitch);
+        node2.connectSwitch(aSwitch);
+
+        assert aSwitch.isConnected(node1);
+        assert aSwitch.isConnected(node2);
+        assert aSwitch.nodes.size() == 2;
+    }
+
+    @Test
+    public void testSendDataSameRack() {
+        Switch aSwitch = new Switch(0, LinkType.GIGABIT);
+
+        Node node1 = new Node(0, 12, 4, new Disk(SataType.SATA1, 60));
+        Node node2 = new Node(1, 12, 4, new Disk(SataType.SATA1, 60));
+
+        node1.connectSwitch(aSwitch);
+        node2.connectSwitch(aSwitch);
+
+        assert node2.getDisk().getBlocks().size() == 0;
+        node1.sendData(node2, new Block(0));
+        assert node2.getDisk().getBlocks().size() == 1;
+    }
+
+    @Test
+    public void testSendDataDifferentRack() {
+        Switch switch1 = new Switch(0, LinkType.GIGABIT);
+        Switch switch2 = new Switch(1, LinkType.GIGABIT);
+        Switch switch0 = new Switch(2, LinkType.TENGIGABIT);
+
+
+        Node node1 = new Node(0, 12, 4, new Disk(SataType.SATA1, 60));
+        Node node2 = new Node(1, 12, 4, new Disk(SataType.SATA1, 60));
+
+        switch1.connectParentSwitch(switch0);
+        switch2.connectParentSwitch(switch0);
+
+        node1.connectSwitch(switch1);
+        node2.connectSwitch(switch2);
+
+        assert node2.getDisk().getBlocks().size() == 0;
+        node1.sendData(node2, new Block(0));
+        assert node2.getDisk().getBlocks().size() == 1;
+    }
+
+    @Test
+    public void testAsParentSwitch() {
+        Switch parentSwitch = new Switch(0, LinkType.TENGIGABIT);
+        Switch childSwitch1 = new Switch(1, LinkType.GIGABIT);
+        Switch childSwitch2 = new Switch(2, LinkType.GIGABIT);
+
+        childSwitch2.connectParentSwitch(parentSwitch);
+        childSwitch1.connectParentSwitch(parentSwitch);
+
+        assert childSwitch1.parentSwitch.equals(parentSwitch);
+        assert childSwitch2.parentSwitch.equals(parentSwitch);
+        assert parentSwitch.switches.size() == 2;
+    }
+
+    @Test
+    public void testTreeTopology() {
+        // we will create 2 racks connected by one switch
+        // each rack contains 2 nodes
+
+        Switch switch1 = new Switch(0, LinkType.GIGABIT);
+        Switch switch2 = new Switch(1, LinkType.TENGIGABIT);
+        Switch switch3 = new Switch(2, LinkType.GIGABIT);
+
+        Node node1 = new Node(0, 12, 4, new Disk(SataType.SATA1, 60));
+        Node node2 = new Node(0, 12, 4, new Disk(SataType.SATA1, 60));
+        Node node3 = new Node(0, 12, 4, new Disk(SataType.SATA1, 60));
+        Node node4 = new Node(0, 12, 4, new Disk(SataType.SATA1, 60));
+
+        // connect nodes to switch
+
     }
 }
