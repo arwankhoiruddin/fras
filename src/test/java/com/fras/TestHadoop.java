@@ -113,4 +113,15 @@ public class TestHadoop {
             System.out.println(i);
         }
     }
+
+    @Test
+    public void test1JobRunStartToFinish() {
+        // only one user here
+        User user1 = new User(0, 60);
+        Cluster.users = new User[1];
+        Cluster.users[0] = user1;
+
+        HDFS.put();
+        MapReduce.MRRun();
+    }
 }
