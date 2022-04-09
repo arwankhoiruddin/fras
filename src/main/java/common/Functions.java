@@ -3,9 +3,13 @@ package common;
 import cluster.Cluster;
 import cluster.Link;
 import mapreduce.Job;
+import net.sourceforge.jFuzzyLogic.FIS;
 
 import java.io.PrintWriter;
 import java.util.LinkedList;
+import java.util.Map;
+
+import static common.MRConfigs.numNodes;
 
 public class Functions {
 
@@ -182,7 +186,27 @@ public class Functions {
     }
 
     public static int getNumberOfBlocks(double dataSize) {
-        return (int) Math.ceil(dataSize*1024 / MRConfigs.blockSize);
+        System.out.println("Size of data: " + dataSize + " block size: " + MRConfigs.blockSize);
+        int numBlocks = (int) Math.ceil(dataSize*1024 / MRConfigs.blockSize);
+        System.out.println("Number of blocks: " + numBlocks);
+        return numBlocks;
+    }
+
+    public static double fuzzyInference(String fclFile, Map<String, Double> fuzzyVariables, String resultVarName) {
+        double value = 0;
+
+        FIS fis = FIS.load(fclFile, true);
+
+        if (fis == null)
+            System.err.println("Cannot load file");
+
+        for (Map.Entry<String, Double> entry: fuzzyVariables.entrySet()) {
+            fis.setVariable(entry.getKey(), entry.getValue());
+        }
+
+        fis.evaluate();
+        return fis.getVariable(resultVarName).getValue();
+
     }
 
     public static int[][] convolution(int[][] a) {

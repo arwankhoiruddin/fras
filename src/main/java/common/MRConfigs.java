@@ -14,13 +14,13 @@ public class MRConfigs {
     public static int numUsers = 4;
     public static ReplicationStrategy replicationStrategy = ReplicationStrategy.REPLICATION;
 
-    public static int numNodes = 8;
+    public static int numNodes = 4;
     public static int vCpuPerNodes = 4;
     public static int ramPerNodes = 16;
     public static int diskSpacePerNodes = 60;
     public static boolean isHomogeneous = true;
 
-    public static double blockSize = 64;
+    public static double blockSize = 128;
 
     public static Scheduler scheduler = new FRAS();
 }

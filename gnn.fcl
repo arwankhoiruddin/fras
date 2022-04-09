@@ -1,0 +1,46 @@
+FUNCTION_BLOCK tipper	// Block definition (there may be more than one block per file)
+
+VAR_INPUT				// Define input variables
+	ping : REAL;
+	cpu : REAL;
+	ram : REAL;
+END_VAR
+
+VAR_OUTPUT				// Define output variable
+	priority : REAL;
+END_VAR
+
+FUZZIFY ping
+	TERM low := (0, 1) (1, 0) ;
+	TERM high := (0, 0) (1, 1);
+END_FUZZIFY
+
+FUZZIFY cpu
+	TERM low := (0, 1) (24, 0) ;
+	TERM high := (0, 0) (24, 1);
+END_FUZZIFY
+
+FUZZIFY ram
+    TERM low := (0, 1) (24, 0);
+    TERM high := (0, 0) (24, 1);
+END_FUZZIFY
+
+DEFUZZIFY priority			// Defzzzify output variable 'priority' : {'low', 'high'}
+	TERM low := (0,1) (1, 0);
+	TERM high := (0,0) (1, 1);
+	METHOD : COG;		// Use 'Center Of Gravity' defuzzification method
+	DEFAULT := 0;		// Default value is 0 (if no rule activates defuzzifier)
+END_DEFUZZIFY
+
+RULEBLOCK No1
+	AND : MIN;			// Use 'min' for 'and' (also implicit use 'max' for 'or' to fulfill DeMorgan's Law)
+	ACT : MIN;			// Use 'min' activation method
+	ACCU : MAX;			// Use 'max' accumulation method
+
+	RULE 1 : IF ping IS low THEN priority IS high;
+    RULE 2 : IF ping IS high THEN priority IS low;
+    RULE 3 : IF cpu IS low OR ram IS low THEN priority IS low;
+    RULE 4 : IF cpu IS high OR ram IS high THEN priority IS high;
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK

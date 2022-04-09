@@ -1,7 +1,6 @@
 package com.fras;
 
-import cluster.Cluster;
-import cluster.User;
+import cluster.*;
 import common.MRConfigs;
 import fifo.FifoScheduler;
 import fras.FRAS;
@@ -115,9 +114,27 @@ public class TestHadoop {
     }
 
     @Test
-    public void test1JobRunStartToFinish() {
+    public void testLoadBalancing() {
+        // here we realize that random distribution of HDFS may cause imbalance in the load of each node.
+        // Here is one example
+        // Node number: 1 has 3 map jobs and 2 data
+        // Node number: 2 has 2 map jobs and 1 data
+        // Node number: 3 has 1 map jobs and 3 data
+        // so we may need load balance algorithm for this
+
         // only one user here
-        User user1 = new User(0, 60);
+        User user1 = new User(0, 0.25);
+        Cluster.users = new User[1];
+        Cluster.users[0] = user1;
+
+        HDFS.put();
+        MapReduce.MRRun();
+    }
+
+    @Test
+    public void testTaskStartToFinish() {
+        // only one user here
+        User user1 = new User(0, 0.25);
         Cluster.users = new User[1];
         Cluster.users[0] = user1;
 

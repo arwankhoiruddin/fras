@@ -140,6 +140,21 @@ public class Node {
         this.memoryloads = memLoads;
     }
 
+    public double ping(Node node) {
+        double timeToTransfer = 0;
+        int dataSize = 1;
+
+        // find the destination node
+        if (this.connectedSwitch.nodes.contains(node)) {
+            timeToTransfer = 2 * dataSize / this.connectedSwitch.getLinkSpeed();
+        } else {
+            timeToTransfer = (dataSize / this.connectedSwitch.getLinkSpeed()) +
+                    ( 2 * (dataSize / this.connectedSwitch.parentSwitch.getLinkSpeed())) +
+                    (dataSize / node.connectedSwitch.getLinkSpeed());
+        }
+        return timeToTransfer;
+    }
+
     public void sendData(Node node, MRData data) {
         double timeToTransfer = 0;
         double dataSize = 0;
