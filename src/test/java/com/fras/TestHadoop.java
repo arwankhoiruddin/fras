@@ -5,10 +5,7 @@ import common.MRConfigs;
 import fifo.FifoScheduler;
 import fras.FRAS;
 import late.LATEScheduler;
-import mapreduce.HDFS;
-import mapreduce.HeartBeat;
-import mapreduce.Job;
-import mapreduce.MapReduce;
+import mapreduce.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -16,13 +13,9 @@ import java.util.*;
 
 public class TestHadoop {
 
-    @BeforeEach
-    public void setUp() {
-        new Cluster();
-    }
-
     @Test
     public void testHeartBeat() {
+        new Cluster();
         HeartBeat heartBeat = new HeartBeat();
         heartBeat.sendHeartBeat();
 
@@ -31,6 +24,7 @@ public class TestHadoop {
 
     @Test
     public void testHDFSPut() {
+        new Cluster();
         User user = new User(0, 10);
         assert Cluster.nodes[1].getDisk().getBlocks().size() == 0;
         HDFS.put(0);
@@ -39,6 +33,7 @@ public class TestHadoop {
 
     @Test
     public void testScheduleJobsFIFO() {
+        new Cluster();
         LinkedList<Job> jobs = new LinkedList<Job>();
         Job job1 = new Job(0, 0, 0.5, 0.7,100);
         Job job2 = new Job(1, 0, 0.3, 0.5, 40);
@@ -58,6 +53,7 @@ public class TestHadoop {
 
     @Test
     public void testScheduleJobsLate() {
+        new Cluster();
         LinkedList<Job> jobs = new LinkedList<Job>();
         Job job1 = new Job(0, 0, 0.5, 0.7,100);
         Job job2 = new Job(1, 0, 0.3, 0.5, 40);
@@ -77,6 +73,7 @@ public class TestHadoop {
 
     @Test
     public void testScheduleJobsFRAS() {
+        new Cluster();
         LinkedList<Job> jobs = new LinkedList<Job>();
         Job job1 = new Job(0, 0, 0.5, 0.7,100);
         Job job2 = new Job(1, 0, 0.3, 0.5, 40);
@@ -97,6 +94,7 @@ public class TestHadoop {
 
     @Test
     public void testMap() {
+        new Cluster();
         Map<Integer, Double> val = new HashMap<>();
         val.put(0, 0.9);
         val.put(1, 0.7);
@@ -114,31 +112,128 @@ public class TestHadoop {
     }
 
     @Test
-    public void testLoadBalancing() {
-        // here we realize that random distribution of HDFS may cause imbalance in the load of each node.
-        // Here is one example
-        // Node number: 1 has 3 map jobs and 2 data
-        // Node number: 2 has 2 map jobs and 1 data
-        // Node number: 3 has 1 map jobs and 3 data
-        // so we may need load balance algorithm for this
+    public void testFindNodeInSameRack() {
+        Switch aSwitch = new Switch(0, LinkType.GIGABIT);
+        Cluster.nodes = new Node[4];
+        for (int i=0; i<Cluster.nodes.length; i++) {
+            Cluster.nodes[i] = new Node(i, 1, 4, new Disk(SataType.SATA1, 50));
+            Cluster.nodes[i].connectSwitch(aSwitch);
+        }
 
-        // only one user here
-        User user1 = new User(0, 0.25);
-        Cluster.users = new User[1];
-        Cluster.users[0] = user1;
-
-        HDFS.put();
-        MapReduce.MRRun();
+        for (int i=0; i<Cluster.nodes.length; i++) {
+            int otherNodeInRack = HDFS.getRandomNodeSameRack(i);
+            System.out.println("current node: " + i + " other node in rack: " + otherNodeInRack);
+            assert i != otherNodeInRack;
+        }
     }
 
     @Test
-    public void testTaskStartToFinish() {
+    public void testFindOtherNodeDifferentRack() {
+        Switch switch1 = new Switch(0, LinkType.GIGABIT);
+        Switch switch2 = new Switch(1, LinkType.GIGABIT);
+        Switch mainSwitch = new Switch(2, LinkType.GIGABIT);
+
+        switch1.connectParentSwitch(mainSwitch);
+        switch2.connectParentSwitch(mainSwitch);
+
+        Cluster.nodes = new Node[8];
+
+        for (int i=0; i<Cluster.nodes.length; i++) {
+            Cluster.nodes[i] = new Node(i, 1, 4, new Disk(SataType.SATA1, 50));
+
+            if (i < 4)
+                Cluster.nodes[i].connectSwitch(switch1);
+            else
+                Cluster.nodes[i].connectSwitch(switch2);
+        }
+
+        int nodeDifferentRack = HDFS.getRandomNodeDifferentRack(0);
+        System.out.println("Node in different rack: " + nodeDifferentRack);
+        assert nodeDifferentRack >= 4;
+
+        int otherNodeDifferentRack = HDFS.getRandomNodeSameRack(nodeDifferentRack);
+        System.out.println("Other node in different rack: " + otherNodeDifferentRack);
+        assert nodeDifferentRack >= 4;
+    }
+    
+    @Test
+    public void testFindNodeInDifferentRack() {
+        Switch switch1 = new Switch(0, LinkType.GIGABIT);
+        Switch switch2 = new Switch(1, LinkType.GIGABIT);
+        Switch mainSwitch = new Switch(2, LinkType.GIGABIT);
+
+        switch1.connectParentSwitch(mainSwitch);
+        switch2.connectParentSwitch(mainSwitch);
+
+        Cluster.nodes = new Node[8];
+
+        for (int i=0; i<Cluster.nodes.length; i++) {
+            Cluster.nodes[i] = new Node(i, 1, 4, new Disk(SataType.SATA1, 50));
+
+            if (i < 4)
+                Cluster.nodes[i].connectSwitch(switch1);
+            else
+                Cluster.nodes[i].connectSwitch(switch2);
+        }
+
+        for (int i=0; i<3; i++) {
+            int otherNodeInRack = HDFS.getRandomNodeDifferentRack(i);
+            System.out.println("i: " + i + " other node: " + otherNodeInRack);
+            assert otherNodeInRack != i;
+        }
+    }
+
+    @Test
+    public void testJobStartToFinishOneUser() {
         // only one user here
-        User user1 = new User(0, 0.25);
+
+        // init nodes
+
+        MRConfigs.numNodes = 8;
+        Cluster.nodes = new Node[MRConfigs.numNodes];
+
+        for (int i = 0; i < MRConfigs.numNodes; i++) {
+            Cluster.nodes[i] = new Node(i, MRConfigs.ramPerNodes, MRConfigs.vCpuPerNodes, new Disk(SataType.SATA3, MRConfigs.diskSpacePerNodes));
+        }
+
+        // init links --> Hadoop assumes that the topology used is tree topology
+        // so we will divide the nodes into two racks
+        int nodePerRack = MRConfigs.numNodes / 2;
+
+        // main switch
+        Switch mainSwitch = new Switch(0, LinkType.TENGIGABIT);
+
+        // switches for racks
+        Switch switch1 = new Switch(1, LinkType.GIGABIT);
+        Switch switch2 = new Switch(2, LinkType.GIGABIT);
+        switch1.connectParentSwitch(mainSwitch);
+        switch2.connectParentSwitch(mainSwitch);
+
+        for (int i=0; i<MRConfigs.numNodes; i++) {
+            if (i < nodePerRack) {
+                // first rack
+                Cluster.nodes[i].connectSwitch(switch1);
+            } else {
+                // second rack
+                Cluster.nodes[i].connectSwitch(switch2);
+            }
+        }
+
+        // only one user here
+        User user1 = new User(0, 1);
         Cluster.users = new User[1];
         Cluster.users[0] = user1;
 
         HDFS.put();
-        MapReduce.MRRun();
+
+        // see the blocks on each node
+        for (int i=0; i<MRConfigs.numNodes; i++) {
+            System.out.println("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+        }
+
+        MapReduce.runMR();
+
+        // check blocks
     }
+
 }

@@ -109,11 +109,11 @@ public class TestCluster {
     @Test
     public void testSendBlock() {
         // send block to other node
-        Cluster.nodes[0].sendData(1, new Block(1));
+        Cluster.nodes[0].sendData(1, new Block(1, 0));
         assert Cluster.nodes[1].getDisk().getBlocks().getLast().getUserID() == 1;
 
         // send other block from other user
-        Cluster.nodes[0].sendData(1, new Block(0));
+        Cluster.nodes[0].sendData(1, new Block(0, 1));
         assert Cluster.nodes[1].getDisk().getBlocks().getLast().getUserID() == 0;
     }
 
@@ -135,7 +135,7 @@ public class TestCluster {
 
     @Test
     public void testDistributeBlocks() {
-        Cluster.nodes[0].sendData(1, new Block(1));
+        Cluster.nodes[0].sendData(1, new Block(1, 0));
         Cluster.nodes[1].sendData(2, Cluster.nodes[1].getDisk().getBlocks().getLast());
         assert Cluster.nodes[1].getDisk().getBlocks().getLast().getUserID() == 1;
     }
@@ -301,7 +301,7 @@ public class TestCluster {
         node2.connectSwitch(aSwitch);
 
         assert node2.getDisk().getBlocks().size() == 0;
-        node1.sendData(node2, new Block(0));
+        node1.sendData(node2, new Block(0, 0));
         assert node2.getDisk().getBlocks().size() == 1;
     }
 
@@ -322,7 +322,7 @@ public class TestCluster {
         node2.connectSwitch(switch2);
 
         assert node2.getDisk().getBlocks().size() == 0;
-        node1.sendData(node2, new Block(0));
+        node1.sendData(node2, new Block(0, 0));
         assert node2.getDisk().getBlocks().size() == 1;
     }
 
@@ -355,6 +355,24 @@ public class TestCluster {
         Node node4 = new Node(0, 12, 4, new Disk(SataType.SATA1, 60));
 
         // connect nodes to switch
+    }
 
+    @Test
+    public void testProcessorSpeed() {
+        Node node1 = new Node(0, 1, 4, new Disk(SataType.SATA1, 60));
+        Job job = new Job(0, 1);
+        Mapper mapper = new Mapper(0, 1, 0.3, 0.8, 10);
+        job.addMapper(mapper);
+        node1.addJob(job);
+        double speed1 = node1.getProcessingSpeed(job.getMappers().getLast().getJobLength());
+        assert speed1 == 10;
+
+        Node node2 = new Node(0, 2, 2, new Disk(SataType.SATA1, 60));
+        Job job2 = new Job(0, 1);
+        Mapper mapper2 = new Mapper(0, 1, 0.3, 0.8, 200);
+        job2.addMapper(mapper2);
+        node2.addJob(job2);
+        double speed2 = node2.getProcessingSpeed(job2.getMappers().getLast().getJobLength());
+        assert speed2 == 100;
     }
 }

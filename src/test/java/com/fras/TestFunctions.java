@@ -5,9 +5,8 @@ import common.Functions;
 import net.sourceforge.jFuzzyLogic.FIS;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.lang.reflect.Array;
+import java.util.*;
 
 public class TestFunctions {
     @Test
@@ -74,5 +73,260 @@ public class TestFunctions {
         fuzzyVar.put("cpu", 1.);
         fuzzyVar.put("ram", 4.);
         System.out.println("FIS Result: " + Functions.fuzzyInference("gnn.fcl", fuzzyVar, "priority"));
+    }
+
+    @Test
+    public void testFindMinimal() {
+        int[] a = {5, 10, 3, 8, 20};
+        int minIdx = 0;
+        int min = 2000;
+
+        for (int i=0; i<a.length; i++) {
+            if (a[i] < min) {
+                min = a[i];
+                minIdx = i;
+            }
+        }
+        System.out.println("Index of minimum value: " + minIdx);
+    }
+
+    @Test
+    public void testHeartBeatConceptOneProcessor() {
+        int heartBeat = 3;
+        int[] jobs = {4, 1, 5, 2, 10, 1, 3};
+        LinkedList scheduled = new LinkedList();
+
+
+        for (int i=0; i<jobs.length; i++) {
+            for (int j=0; j < jobs[i]; j++) {
+                scheduled.add(1);
+            }
+            if (jobs[i] % heartBeat != 0) {
+                int reminder = heartBeat - (jobs[i] % heartBeat);
+                for (int j=0; j< reminder; j++) {
+                    scheduled.add(0);
+                }
+            }
+        }
+
+        Functions.printList(scheduled);
+    }
+
+    @Test
+    public void testHeartBeatConceptMultiProcessor() {
+        int heartBeat = 3;
+        int[] jobs = {4, 1, 5, 2, 10, 1, 3};
+        int nProcessor = 4;
+
+        LinkedList[] scheduled = new LinkedList[nProcessor];
+        for (int i=0; i<nProcessor; i++) {
+            scheduled[i] = new LinkedList();
+        }
+
+        int procNumber = 0;
+        for (int i=0; i<jobs.length; i++) {
+            for (int j=0; j<jobs[i]; j++)
+                scheduled[procNumber].add(1);
+
+            if (jobs[i] % heartBeat != 0) {
+                int reminder = heartBeat - (jobs[i] % heartBeat);
+                for (int j=0; j<reminder; j++) {
+                    scheduled[procNumber].add(0);
+                }
+            }
+            if (procNumber >= nProcessor - 1)
+                procNumber = 0;
+            else
+                procNumber++;
+        }
+
+        for (int i=0; i<nProcessor; i++) {
+            Functions.printList(scheduled[i]);
+        }
+    }
+
+    @Test
+    public void testHeartBeatConceptMultiProcessorScheduled() {
+        int heartBeat = 3;
+        int[] jobs = {4, 1, 5, 2, 10, 1, 3};
+        int nProcessor = 4;
+
+        LinkedList[] scheduled = new LinkedList[nProcessor];
+        for (int i=0; i<nProcessor; i++) {
+            scheduled[i] = new LinkedList();
+        }
+
+        for (int i=0; i<jobs.length; i++) {
+
+            // now we try to put the job in the shortest LinkedList
+            int procNumber = 0;
+            int minLength = 1000000;
+            for (int j=0; j<nProcessor; j++) {
+                if (scheduled[j].size() < minLength) {
+                    minLength = scheduled[j].size();
+                    procNumber = j;
+                }
+            }
+
+            for (int j=0; j<jobs[i]; j++)
+                scheduled[procNumber].add(1);
+
+            if (jobs[i] % heartBeat != 0) {
+                int reminder = heartBeat - (jobs[i] % heartBeat);
+                for (int j=0; j<reminder; j++) {
+                    scheduled[procNumber].add(0);
+                }
+            }
+        }
+
+        for (int i=0; i<nProcessor; i++) {
+            Functions.printList(scheduled[i]);
+        }
+    }
+
+    @Test
+    public void testHeartBeatConceptMultiProcessorSomeStepsScheduled() {
+        int heartBeat = 3;
+        int[] jobs = {4, 1, 5, 2, 10, 1, 3};
+        int[] shuffle = {8, 5, 7};
+        int[] sort = {7, 8, 3};
+        int nProcessor = 4;
+
+        LinkedList[] scheduled = new LinkedList[nProcessor];
+        for (int i=0; i<nProcessor; i++) {
+            scheduled[i] = new LinkedList();
+        }
+
+        scheduled = schedule(jobs, nProcessor, scheduled, heartBeat);
+        scheduled = fillZero(nProcessor, scheduled);
+
+        // schedule the next process
+        scheduled = schedule(shuffle, nProcessor, scheduled, heartBeat);
+        scheduled = fillZero(nProcessor, scheduled);
+
+        // schedule the next process
+        scheduled = schedule(sort, nProcessor, scheduled, heartBeat);
+        scheduled = fillZero(nProcessor, scheduled);
+    }
+
+    @Test
+    public void testHeartBeatConceptMultiSlotsSomeStepsScheduled() {
+        int heartBeat = 3;
+        int[] jobs = {4, 1, 5, 2, 10, 1, 3};
+        int[] shuffle = {8, 5, 7};
+        int[] sort = {7, 8, 3};
+        int[] cpu = {1, 2, 4}; // per CPU one slot
+        int nProcessor = 0;
+        for (int i=0; i<cpu.length; i++) {
+            nProcessor += cpu[i];
+        }
+
+        LinkedList[] scheduled = new LinkedList[nProcessor];
+        for (int i=0; i<nProcessor; i++) {
+            scheduled[i] = new LinkedList();
+        }
+
+        scheduled = schedule(jobs, nProcessor, scheduled, heartBeat);
+        scheduled = fillZero(nProcessor, scheduled);
+
+        // schedule the next process
+        scheduled = schedule(shuffle, nProcessor, scheduled, heartBeat);
+        scheduled = fillZero(nProcessor, scheduled);
+
+        // schedule the next process
+        scheduled = schedule(sort, nProcessor, scheduled, heartBeat);
+        scheduled = fillZero(nProcessor, scheduled);
+    }
+
+    private LinkedList[] fillZero(int nProcessor, LinkedList[] scheduled) {
+        // find the max length from each processor
+        int idxMax = 0;
+        int maxLength = 0;
+        for (int i=0; i<nProcessor; i++) {
+            if (scheduled[i].size() > maxLength) {
+                maxLength = scheduled[i].size();
+                idxMax = i;
+            }
+            Functions.printList(scheduled[i]);
+        }
+        System.out.println("Max length: " + maxLength + " idx: " + idxMax);
+
+        // fill the rest with zeros
+        for (int i=0; i<nProcessor; i++) {
+            for (int j=scheduled[i].size(); j<maxLength; j++) {
+                scheduled[i].add(0);
+            }
+            Functions.printList(scheduled[i]);
+        }
+        return scheduled;
+    }
+
+    private LinkedList[] schedule(int[] jobs, int nProcessor, LinkedList[] scheduled, int heartBeat) {
+        for (int i=0; i<jobs.length; i++) {
+
+            // now we try to put the job in the shortest LinkedList
+            int procNumber = 0;
+            int minLength = 1000000;
+            for (int j=0; j<nProcessor; j++) {
+                if (scheduled[j].size() < minLength) {
+                    minLength = scheduled[j].size();
+                    procNumber = j;
+                }
+            }
+
+            for (int j=0; j<jobs[i]; j++)
+                scheduled[procNumber].add(1);
+
+            if (jobs[i] % heartBeat != 0) {
+                int reminder = heartBeat - (jobs[i] % heartBeat);
+                for (int j=0; j<reminder; j++) {
+                    scheduled[procNumber].add(0);
+                }
+            }
+        }
+        return scheduled;
+    }
+
+    @Test
+    public void mapBlockWithUser() {
+        Map<Integer, Integer> blockMap = new HashMap<>(); // key: blockID, value: userID
+        blockMap.put(0, 1);
+        blockMap.put(1, 1);
+        blockMap.put(5, 2);
+        blockMap.put(10, 2);
+
+        System.out.println("Block number 1 belongs to user number: " + blockMap.get(1));
+        System.out.println("Block number 10 belongs to user number: " + blockMap.get(10));
+    }
+
+    @Test
+    public void testBlockPlacement() {
+        // to find the best data structure to save block placements
+
+        Map userBlock = new HashMap();
+        Map blockPlacement = new HashMap();
+        Map<Integer, List<Integer>> replications = new HashMap<>();
+
+        userBlock.put(1, 0); // block 1 belongs to user 0
+        userBlock.put(2, 3); // block 2 belongs to user 3
+
+        blockPlacement.put(2, 4); // block 2 is placed in node 4
+        blockPlacement.put(1, 3); // block 1 is placed in node 3
+
+        replications.put(1, new ArrayList<>());
+        replications.get(1).add(3);
+        replications.get(1).add(4);
+
+        // block x belongs to user y is placed in node z
+        for (int i=1; i<=userBlock.size(); i++) {
+            System.out.println("Block " + i + " belongs to user " + userBlock.get(i) + " is placed in node " + blockPlacement.get(i));
+            if (replications.get(i) != null) {
+                ArrayList rep = (ArrayList) replications.get(i);
+                for (int j=0; j< rep.size(); j++) {
+                    System.out.println("Replica in node: " + rep.get(j));
+                }
+            }
+        }
+
     }
 }

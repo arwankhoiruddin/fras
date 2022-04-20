@@ -78,6 +78,7 @@ public class MapReduce {
 
             Log.debug("Data");
             Functions.printArray(nData);
+
             Log.debug("Job");
             Functions.printArray(nJobs);
 
@@ -86,6 +87,24 @@ public class MapReduce {
 
         Functions.printArray(countData);
         Functions.printArray(countJobs);
+
+    }
+
+    public static void runMR() {
+
+        // check blocks placement
+
+        System.out.println("Cluster blockID: " + Cluster.blockID);
+
+        // try to execute mappers on the original block
+        for (int i=0; i<Cluster.blockID; i++) {
+            System.out.println("Block ID: " + i + " belongs to user " + Cluster.blockUserID.get(i) + " is placed in node " + Cluster.blockPlacement.get(i));
+        }
+        // if node having the original block failed, then execute the replica after next 3 heartbeat
+        // generate intermediary result
+        // execute shuffle
+        // execute sort
+        // execute reducer
 
     }
 }

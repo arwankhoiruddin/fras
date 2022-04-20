@@ -19,7 +19,7 @@ public class TestStorage {
 
     @Test
     public void testAddBlock() {
-        Block block = new Block(1);
+        Block block = new Block(1, 0);
         Cluster.nodes[0].addBlock(block);
         assert Cluster.nodes[0].getDisk().getBlocks().getFirst().getUserID() == 1;
     }
@@ -33,8 +33,8 @@ public class TestStorage {
 
     @Test
     public void testGetParities() {
-        Block block1 = new Block(1);
-        Block block2 = new Block(2);
+        Block block1 = new Block(1, 0);
+        Block block2 = new Block(2, 0);
         Parity parity = new Parity(2);
         Disk disk = new Disk(SataType.SATA1, 10);
         disk.addBlock(block1);
@@ -49,8 +49,8 @@ public class TestStorage {
 
     @Test
     public void testGetBlocks() {
-        Block block1 = new Block(1);
-        Block block2 = new Block(2);
+        Block block1 = new Block(1, 0);
+        Block block2 = new Block(2, 0);
         Parity parity = new Parity(2);
         Disk disk = new Disk(SataType.SATA1, 10);
         disk.addBlock(block1);
@@ -64,7 +64,7 @@ public class TestStorage {
 
     @Test
     public void testSpaceAfterBlockAdded() {
-        Block block = new Block(1);
+        Block block = new Block(1, 0);
         Disk disk = new Disk(SataType.SATA1, 1);
         disk.addBlock(block);
         assert disk.getDiskSpace() == 960; // 1024 - 64 (block size)

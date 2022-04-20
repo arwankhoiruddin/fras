@@ -3,14 +3,21 @@ package cluster;
 import common.MRConfigs;
 import mapreduce.*;
 
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 public class Cluster {
     public static Node[] nodes = new Node[MRConfigs.numNodes];
     public static User[] users = new User[MRConfigs.numUsers];
     public static int numBlocks;
-    public static HeartBeat heartBeat;
     public static LinkedList liveNodes = new LinkedList();
+    public static int blockID = 0;
+
+    public static Map<Integer, Integer> blockUserID = new HashMap<>();  // key: blockID, value: userID
+    public static Map<Integer, Integer> blockPlacement = new HashMap<>(); // key: blockID, value: node
+    public static Map<Integer, List<Integer>> replications = new HashMap<>(); // key: blockID, values: nodes to put the replicas
 
     public Cluster() {
         // init nodes
@@ -49,6 +56,5 @@ public class Cluster {
             }
             Time.times.add(node);
         }
-
     }
 }

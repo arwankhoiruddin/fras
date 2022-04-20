@@ -1,10 +1,14 @@
 package mapreduce;
 
 import cluster.Cluster;
+import cluster.Link;
+import cluster.Node;
+import cluster.Switch;
 import common.Functions;
 import common.Log;
 import common.MRConfigs;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Random;
 
@@ -28,7 +32,7 @@ public class HDFS {
     public static void put() {
         // split the data into blocks
         Log.debug("Block size: " + MRConfigs.blockSize + " MB");
-        LinkedList<Block> blocks = new LinkedList<>();
+//        LinkedList<Block> blocks = new LinkedList<>();
 
         for (int userID=0; userID< Cluster.users.length; userID++) {
             int numBlocks = Functions.getNumberOfBlocks(Cluster.users[userID].getDataSize());
@@ -36,83 +40,102 @@ public class HDFS {
             Log.debug("User ID: " + userID + ", Data size: " + Cluster.users[userID].getDataSize() + " GB, " +
                     "Replication strategy: " + MRConfigs.replicationStrategy + " number of blocks: " + numBlocks);
             for (int blkNum=0; blkNum < numBlocks; blkNum++) {
-                Block newBlock = new Block(userID);
-                blocks.add(newBlock);
+                Block newBlock = new Block(userID, Cluster.blockID);
+                distributeBlock(newBlock, 3);
             }
-
-            Cluster.numBlocks = blocks.size();
-            Log.debug("Total number of blocks: " + blocks.size());
-
-            // spread the blocks into the cluster
-            for (int blockNum=0; blockNum<blocks.size(); blockNum++) {
-                int nodeNumber = 1 + new Random().nextInt(MRConfigs.numNodes - 1);
-
-                if (MRConfigs.replicationStrategy == ReplicationStrategy.REPLICATION) {
-                    numBlocks *= 3; // use the default number of block replica
-
-                    for (int b=0; b<numBlocks; b++) {
-
-                    }
-                    // put the first replication in the same rack in different node
-
-                    // put the second replication in the different rack
-
-                    // put the third replication in the different rack different node
-
-                }
-                Log.debug("Sending block number " + blockNum + " owned by user " + blocks.get(blockNum).getUserID() +  " to node number " + nodeNumber);
-
-                // to be added
-                // the parity is placed in different node/rack
-                // here, we might be able to incorporate the Graph Neural Network to effectively place the blocks in the cluster
-                Cluster.nodes[0].sendData(Cluster.nodes[nodeNumber], blocks.get(blockNum));
-            }
-
         }
-
     }
 
-    private static void replicationPlacement(int initialNode, int numReplication) {
+    public static int getRandomNodeSameRack(int nodeNumber) {
+        int differentNode = 0;
 
+        Switch parentSwitch = Cluster.nodes[nodeNumber].getConnectedSwitch();
+        LinkedList<Node> nodes = parentSwitch.nodes;
+
+        int counter = 0;
+        while (true) {
+            int node = nodes.get(new Random().nextInt(nodes.size() - 1) + 1).getNodeID();
+            if (node != nodeNumber) {
+                differentNode = node;
+                break;
+            }
+            if (counter == 10) break;
+            counter++;
+        }
+
+        return differentNode;
+    }
+
+    public static int getRandomNodeDifferentRack(int nodeNumber) {
+        int nodeFound = 0;
+
+        // find switch of different rack
+        Switch currentSwitch = Cluster.nodes[nodeNumber].getConnectedSwitch();
+        Switch mainSwitch = currentSwitch.parentSwitch;
+
+        LinkedList<Switch> rackSwitches = mainSwitch.switches;
+        Switch otherRackSwitch = currentSwitch;
+
+        // anticipate if there are more than one racks
+        while (true) {
+            Switch other = rackSwitches.get(new Random().nextInt(rackSwitches.size()));
+            if (other.getSwitchID() != currentSwitch.getSwitchID()) {
+                otherRackSwitch = other;
+                break;
+            }
+        }
+
+        return otherRackSwitch.nodes.get(new Random().nextInt(otherRackSwitch.nodes.size())).getNodeID();
+    }
+
+    private static void distributeBlock(Block block, int numReplication) {
+        // https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsBlockPlacementPolicies.html
+
+        System.out.println("Block number " + block.getBlockID() + " distribution in the same rack");
+        // send the new block to the cluster
+        int nodeNumber = getRandomNodeSameRack(0);
+        Cluster.nodes[0].sendData(Cluster.nodes[nodeNumber], block);
+        Cluster.blockPlacement.put(Cluster.blockID, nodeNumber);
+
+        System.out.println("Block ID: " + Cluster.blockID);
+        Cluster.blockUserID.put(Cluster.blockID, block.getUserID());
+
+        // replicate the block and send to other nodes
+        // send the first replica to other node in the same rack
+        int rep1 = getRandomNodeSameRack(nodeNumber);
+        Cluster.nodes[0].sendData(Cluster.nodes[rep1], block);
+
+        System.out.println("Distribute block number " + block.getBlockID() + " to the different rack");
+
+        // send the second replica to other node in the different rack
+        int nodeOtherRack = getRandomNodeDifferentRack(0);
+        Cluster.nodes[0].sendData(Cluster.nodes[nodeOtherRack], block);
+
+        // send the third replica to other node in the different rack
+        int rep2 = getRandomNodeSameRack(nodeOtherRack);
+        Cluster.nodes[0].sendData(Cluster.nodes[rep2], block);
+
+        // put in replication data
+        Cluster.replications.put(Cluster.blockID, new ArrayList<>());
+
+        Cluster.replications.get(Cluster.blockID).add(rep1);
+        Cluster.replications.get(Cluster.blockID).add(nodeOtherRack);
+        Cluster.replications.get(Cluster.blockID).add(rep2);
+
+        // note the block distribution in NameNode
+        Cluster.blockID++;
     }
 
     public static void put(int userID) {
         // split the data into blocks
         Log.debug("Block size: " + MRConfigs.blockSize + " MB");
-        LinkedList<Block> blocks = new LinkedList<>();
 
-        int numBlocks = Functions.getNumberOfBlocks(Cluster.users[userID].getDataSize());
+        Cluster.numBlocks = Functions.getNumberOfBlocks(Cluster.users[userID].getDataSize());
 
-        Log.debug("User ID: " + userID + ", Data size: " + Cluster.users[userID].getDataSize() + " GB, number of blocks: " + numBlocks);
-        for (int blkNum=0; blkNum < numBlocks; blkNum++) {
-            Block newBlock = new Block(userID);
-            blocks.add(newBlock);
-        }
-
-        Cluster.numBlocks = blocks.size();
-        Log.debug("Total number of blocks: " + blocks.size());
-
-        // spread the blocks into the cluster
-        for (int blockNum=0; blockNum<blocks.size(); blockNum++) {
-            // randomly place the block
-            int nodeNumber = 1 + new Random().nextInt(MRConfigs.numNodes - 1);
-
-            if (MRConfigs.replicationStrategy == ReplicationStrategy.REPLICATION) {
-                numBlocks *= 3; // use the default number of block replica
-
-                // put the first replication in the same rack in different node
-
-                // put the second replication in the different rack
-
-                // put the third replication in the different rack different node
-            }
-
-            Log.debug("Sending block number " + blockNum + " owned by user " + blocks.get(blockNum).getUserID() +  " to node number " + nodeNumber);
-
-            // to be added
-            // the parity is placed in different node/rack
-            // here, we might be able to incorporate the Graph Neural Network to effectively place the blocks in the cluster
-            Cluster.nodes[0].sendData(Cluster.nodes[nodeNumber], blocks.get(blockNum));
+        Log.debug("User ID: " + userID + ", Data size: " + Cluster.users[userID].getDataSize() + " GB, number of blocks: " + Cluster.numBlocks);
+        for (int blkNum=0; blkNum < Cluster.numBlocks; blkNum++) {
+            Block newBlock = new Block(userID, blkNum);
+            distributeBlock(newBlock, 3);
         }
     }
 }

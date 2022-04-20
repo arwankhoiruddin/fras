@@ -10,8 +10,8 @@ import java.util.Map;
 
 public class Node {
     private int nodeID;
-    private int ram;
-    private int cpu;
+    private int ram; // influence multi processing
+    private int cpu; // influence speed
     private Disk disk;
     private LinkedList<Job> jobs;
     private Map<Integer, Link> links = new HashMap<>();
@@ -102,6 +102,10 @@ public class Node {
         return this.connectedSwitch;
     }
 
+    public double getProcessingSpeed(double length) {
+        return length / this.cpu;
+    }
+
     public void runJob() {
         // based on https://sci-hub.ru/https://ieeexplore.ieee.org/document/7019857
         // task runtime (T) can be formulated as
@@ -114,28 +118,41 @@ public class Node {
 //        double timeToRun = this.cpu*1024*1024 * Cluster.users[this.jobs.removeFirst().getUserID()].getCpuLoad();
 //        Log.display("Time to run the job: " + timeToRun);
 
-        // each vCPU core can run a job
+        // memory define parallelism, so
+        // each core can run a job
         double memLoads = 0;
 
-        for (int i=0; i<this.cpu; i++) {
-            if (jobs.size() > 0) {
-                Job jobRun = jobs.removeLast();
-                cpuLoads[i] = jobRun.getCpuLoad();
-                memLoads += jobRun.getIOLoad();
+        // run mapper
 
-                // add the job run to timeline, as much as the job time
-                for (int t=0; t<jobRun.getJobLength(); t++) {
-                    if (jobRun instanceof Mapper)
-                        Time.times.get(this.nodeID).get(i).add(Status.RUN_MAP);
-                    else if (jobRun instanceof Reducer)
-                        Time.times.get(this.nodeID).get(i).add(Status.RUN_REDUCE);
-                    else if (jobRun instanceof Shuffle)
-                        Time.times.get(this.nodeID).get(i).add(Status.RUN_SHUFFLE);
-                    else
-                        Time.times.get(this.nodeID).get(i).add(Status.RUN_SORT);
-                }
-            }
-        }
+
+        // run shuffle
+
+        // run sort
+
+        // run reducer
+
+//        for (int i=0; i<this.cpu; i++) {
+//            if (jobs.size() > 0) {
+//                Job jobRun = jobs.removeLast();
+//                System.out.println("Job length: " + jobRun.getJobLength());
+//                double length = jobRun.getJobLength() / this.cpu;
+//                System.out.println("Job length: " + length);
+//                cpuLoads[i] = jobRun.getCpuLoad();
+//                memLoads += jobRun.getIOLoad();
+//
+//                // add the job run to timeline, as much as the job time
+//                for (int t=0; t<length; t++) {
+//                    if (jobRun instanceof Mapper)
+//                        Time.times.get(this.nodeID).get(i).add(Status.RUN_MAP);
+//                    else if (jobRun instanceof Reducer)
+//                        Time.times.get(this.nodeID).get(i).add(Status.RUN_REDUCE);
+//                    else if (jobRun instanceof Shuffle)
+//                        Time.times.get(this.nodeID).get(i).add(Status.RUN_SHUFFLE);
+//                    else
+//                        Time.times.get(this.nodeID).get(i).add(Status.RUN_SORT);
+//                }
+//            }
+//        }
 
         this.memoryloads = memLoads;
     }
