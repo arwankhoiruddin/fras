@@ -19,6 +19,11 @@ public class Node {
     private boolean reachable = true;
     private Switch connectedSwitch;
 
+    // to mark each task run and heartbeat
+    public LinkedList<Double> scheduled = new LinkedList<>();
+    public LinkedList<Double> status = new LinkedList<>();
+    public LinkedList<TaskType> taskType = new LinkedList();
+
     // loads on certain time
     private double[] cpuLoads;
     private double memoryloads;
@@ -107,6 +112,10 @@ public class Node {
     }
 
     public void runJob() {
+
+        System.out.println("==================================");
+        System.out.println("Running task in node number " + this.nodeID);
+
         // based on https://sci-hub.ru/https://ieeexplore.ieee.org/document/7019857
         // task runtime (T) can be formulated as
         // T = T_R + T_Q + T_D + T_E + T_O
@@ -123,7 +132,34 @@ public class Node {
         double memLoads = 0;
 
         // run mapper
+        for (int i=0; i < this.getJobs().size(); i++) {
+            Mapper mapper = (Mapper) this.getJobs().get(i);
+            double mapperLength = mapper.getJobLength();
+            double runTime = this.getProcessingSpeed(mapperLength);
 
+            int hbCount = (int) runTime / MRConfigs.heartbeat;
+
+            for (int j=0; j<hbCount; j++) {
+                this.scheduled.add((double) MRConfigs.heartbeat);
+                this.status.add(1.);
+                this.taskType.add(TaskType.MAPPER);
+                runTime -= MRConfigs.heartbeat;
+            }
+            this.scheduled.add(runTime);
+            this.status.add(1.);
+            this.taskType.add(TaskType.MAPPER);
+
+            double remainder = MRConfigs.heartbeat - runTime;
+            if (remainder > 0) {
+                this.scheduled.add(remainder);
+                this.status.add(0.);
+                this.taskType.add(TaskType.IDLE);
+            }
+        }
+
+        for (int i=0; i<this.scheduled.size(); i++) {
+            System.out.println(this.status.get(i) + " \t " + this.scheduled.get(i) + " \t " + this.taskType.get(i));
+        }
 
         // run shuffle
 

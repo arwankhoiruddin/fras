@@ -93,7 +93,8 @@ public class HDFS {
 
         System.out.println("Block number " + block.getBlockID() + " distribution in the same rack");
         // send the new block to the cluster
-        int nodeNumber = getRandomNodeSameRack(0);
+        int nodeNumber = getRandomNodeSameRack(0); // arwan todo: we can play around here
+
         Cluster.nodes[0].sendData(Cluster.nodes[nodeNumber], block);
         Cluster.blockPlacement.put(Cluster.blockID, nodeNumber);
 
@@ -108,7 +109,7 @@ public class HDFS {
         System.out.println("Distribute block number " + block.getBlockID() + " to the different rack");
 
         // send the second replica to other node in the different rack
-        int nodeOtherRack = getRandomNodeDifferentRack(0);
+        int nodeOtherRack = getRandomNodeDifferentRack(nodeNumber);
         Cluster.nodes[0].sendData(Cluster.nodes[nodeOtherRack], block);
 
         // send the third replica to other node in the different rack

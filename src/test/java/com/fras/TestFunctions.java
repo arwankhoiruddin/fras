@@ -2,6 +2,8 @@ package com.fras;
 
 import cluster.*;
 import common.Functions;
+import mapreduce.Job;
+import mapreduce.Mapper;
 import net.sourceforge.jFuzzyLogic.FIS;
 import org.junit.jupiter.api.Test;
 
@@ -88,6 +90,47 @@ public class TestFunctions {
             }
         }
         System.out.println("Index of minimum value: " + minIdx);
+    }
+
+    @Test
+    public void testHeartBeatConceptOneProcessorWithRuntime() {
+        int heartBeat = 3;
+        int CPUSpeed = 2;
+        int[] jobs = {4, 1, 5, 2, 10, 1, 3};
+
+        LinkedList<Double> scheduled = new LinkedList();
+        LinkedList status = new LinkedList();
+
+        double runningTime = 0;
+
+        for (int i=0; i<jobs.length; i++) {
+            runningTime = (double) jobs[i] / CPUSpeed;
+            System.out.println("Running time: " + runningTime);
+            int hbCount = (int) runningTime / heartBeat;
+            if (hbCount > 0) {
+                for (int j=0; j<(runningTime / heartBeat); j++) {
+                    runningTime -= heartBeat;
+                    scheduled.add((double) heartBeat);
+                    status.add(1);
+                }
+            }
+            scheduled.add(runningTime);
+            status.add(1);
+
+            if (runningTime % heartBeat != 0) {
+                double reminder = heartBeat - runningTime;
+                scheduled.add(reminder);
+                status.add(0);
+            }
+        }
+
+        double totalTime = 0;
+        for (int i=0; i<status.size(); i++) {
+            System.out.println(status.get(i) + " \t " + scheduled.get(i));
+            totalTime += (double) scheduled.get(i);
+        }
+        System.out.println("Total time: " + totalTime);
+
     }
 
     @Test
@@ -327,6 +370,14 @@ public class TestFunctions {
                 }
             }
         }
+    }
+
+    @Test
+    public void testRunMapper() {
+        Map userBlock = new HashMap();
+        Mapper mapper = new Mapper(0, 0, 0.5, 0.3, 10);
+        Job job = new Job(0, 0);
+        job.addMapper(mapper);
 
     }
 }

@@ -367,7 +367,7 @@ public class TestCluster {
         double speed1 = node1.getProcessingSpeed(job.getMappers().getLast().getJobLength());
         assert speed1 == 10;
 
-        Node node2 = new Node(0, 2, 2, new Disk(SataType.SATA1, 60));
+        Node node2 = new Node(1, 2, 2, new Disk(SataType.SATA1, 60));
         Job job2 = new Job(0, 1);
         Mapper mapper2 = new Mapper(0, 1, 0.3, 0.8, 200);
         job2.addMapper(mapper2);

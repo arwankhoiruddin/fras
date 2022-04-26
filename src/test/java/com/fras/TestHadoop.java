@@ -236,4 +236,24 @@ public class TestHadoop {
         // check blocks
     }
 
+    @Test
+    public void testRunMapSingleUser() {
+        Node n1 = new Node(0, 10, 12, new Disk(SataType.SATA1, 100));
+        Node n2 = new Node(0, 4, 12, new Disk(SataType.SATA1, 60));
+
+        User arwan = new User(0, 15);
+        User ahmad = new User(1, 10);
+
+        Mapper mapper = new Mapper(0, arwan.getUserID(), 0.2, 0.3, 10);
+        Mapper mapper2 = new Mapper(0, ahmad.getUserID(), 0.2, 0.3, 20);
+
+        n1.addJob(mapper);
+        n1.addJob(mapper2);
+        n1.runJob();
+
+        n2.addJob(mapper);
+        n2.addJob(mapper2);
+        n2.runJob();
+    }
+
 }
