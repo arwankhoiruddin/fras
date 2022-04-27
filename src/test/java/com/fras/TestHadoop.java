@@ -237,23 +237,74 @@ public class TestHadoop {
     }
 
     @Test
-    public void testRunMapSingleUser() {
+    public void testRunMaps() {
         Node n1 = new Node(0, 10, 12, new Disk(SataType.SATA1, 100));
-        Node n2 = new Node(0, 4, 12, new Disk(SataType.SATA1, 60));
+        Node n2 = new Node(1, 4, 12, new Disk(SataType.SATA1, 60));
 
         User arwan = new User(0, 15);
         User ahmad = new User(1, 10);
 
-        Mapper mapper = new Mapper(0, arwan.getUserID(), 0.2, 0.3, 10);
-        Mapper mapper2 = new Mapper(0, ahmad.getUserID(), 0.2, 0.3, 20);
+        Job jobArwan = new Job(0, arwan.getUserID());
+        Job jobAhmad = new Job(1, ahmad.getUserID());
 
-        n1.addJob(mapper);
-        n1.addJob(mapper2);
+        Mapper mapper = new Mapper(0, arwan.getUserID(), 25);
+        Mapper mapper2 = new Mapper(0, ahmad.getUserID(), 20);
+
+        jobArwan.addMapper(mapper);
+        jobAhmad.addMapper(mapper2);
+
+        n1.addJob(jobArwan);
+        n1.addJob(jobAhmad);
         n1.runJob();
 
-        n2.addJob(mapper);
-        n2.addJob(mapper2);
+        // if n2 runs the job, then it must be slower
+        n2.addJob(jobArwan);
+        n2.addJob(jobAhmad);
         n2.runJob();
     }
 
+    @Test
+    public void testRunJobs() {
+        int taskID = 0;
+
+        Node n1 = new Node(0, 10, 12, new Disk(SataType.SATA1, 100));
+        Node n2 = new Node(1, 4, 12, new Disk(SataType.SATA1, 60));
+
+        User arwan = new User(0, 15);
+        User ahmad = new User(1, 10);
+
+        Job jobArwan = new Job(0, arwan.getUserID());
+        Job jobAhmad = new Job(1, ahmad.getUserID());
+
+        Mapper mapperArwan = new Mapper(taskID++, arwan.getUserID(), 25);
+        Mapper mapperAhmad = new Mapper(taskID++, ahmad.getUserID(), 20);
+
+        Shuffle shuffleArwan = new Shuffle(taskID++, arwan.getUserID(), 15);
+        Shuffle shuffleAhmad = new Shuffle(taskID++, ahmad.getUserID(), 30);
+
+        Sort sortArwan = new Sort(taskID++, arwan.getUserID(), 30);
+        Sort sortAhmad = new Sort(taskID++, ahmad.getUserID(), 35);
+
+        Reducer reducerArwan = new Reducer(taskID++, arwan.getUserID(), 15);
+        Reducer reducerAhmad = new Reducer(taskID++, ahmad.getUserID(), 20);
+
+        jobArwan.addMapper(mapperArwan);
+        jobArwan.addShuffle(shuffleArwan);
+        jobArwan.addSort(sortArwan);
+        jobArwan.addReducer(reducerArwan);
+
+        jobAhmad.addMapper(mapperAhmad);
+        jobAhmad.addShuffle(shuffleAhmad);
+        jobAhmad.addSort(sortAhmad);
+        jobAhmad.addReducer(reducerAhmad);
+
+        n1.addJob(jobArwan);
+        n1.addJob(jobAhmad);
+        n1.runJob();
+
+        // if n2 runs the job, then it must be slower
+        n2.addJob(jobArwan);
+        n2.addJob(jobAhmad);
+        n2.runJob();
+    }
 }

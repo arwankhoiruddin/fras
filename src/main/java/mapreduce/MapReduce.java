@@ -102,7 +102,7 @@ public class MapReduce {
             System.out.println("Block ID: " + i + " belongs to user " + Cluster.blockUserID.get(i) + " is placed in node " + nodeHavingBlock);
 
             // run mapper in the available block
-            Cluster.nodes[nodeHavingBlock].addJob(new Mapper(0, Cluster.blockUserID.get(i), 0.3, 0.7, 10));
+//            Cluster.nodes[nodeHavingBlock].addJob(new Mapper(0, Cluster.blockUserID.get(i), 10));
             Cluster.nodes[nodeHavingBlock].runJob();
         }
         // if node having the original block failed, then execute the replica after next 3 heartbeat

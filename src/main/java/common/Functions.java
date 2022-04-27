@@ -13,23 +13,6 @@ import static common.MRConfigs.numNodes;
 
 public class Functions {
 
-//    public static LinkedList sortList(LinkedList linkedList, SortDirection sortDirection) {
-//
-//        LinkedList temp = linkedList;
-//
-//        for (int i=0; i<temp.size() - 1; i++) {
-//            double minLength = temp.get(i).getJobLength();
-//            for (int j=i + 1; j < temp.size(); j++) {
-//                if (minLength > temp.get(j).getJobLength()) {
-//                    minLength = sorted.get(j).getJobLength();
-//                    Job temp = sorted.get(i);
-//                    sorted.set(i, sorted.get(j));
-//                    sorted.set(j, temp);
-//                }
-//            }
-//        }
-//    }
-
     public static void printArray(int[] array) {
         for (int i=0; i<array.length; i++) {
             System.out.print(array[i] + "\t");

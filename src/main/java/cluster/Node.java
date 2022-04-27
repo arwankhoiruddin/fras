@@ -130,67 +130,92 @@ public class Node {
         // memory define parallelism, so
         // each core can run a job
         double memLoads = 0;
+        double totalRunTime = 0;
 
-        // run mapper
+        // run mapper todo: check if the user block is in the node
+
         for (int i=0; i < this.getJobs().size(); i++) {
-            Mapper mapper = (Mapper) this.getJobs().get(i);
-            double mapperLength = mapper.getJobLength();
-            double runTime = this.getProcessingSpeed(mapperLength);
+            // one job can contain more than one mapper
+            Job job = this.getJobs().get(i);
 
-            int hbCount = (int) runTime / MRConfigs.heartbeat;
-
-            for (int j=0; j<hbCount; j++) {
-                this.scheduled.add((double) MRConfigs.heartbeat);
-                this.status.add(1.);
-                this.taskType.add(TaskType.MAPPER);
-                runTime -= MRConfigs.heartbeat;
+            for (int map=0; map < job.getMappers().size(); map++) {
+                Mapper mapper = job.getMappers().get(map);
+                totalRunTime += runTask(mapper);
             }
-            this.scheduled.add(runTime);
-            this.status.add(1.);
-            this.taskType.add(TaskType.MAPPER);
-
-            double remainder = MRConfigs.heartbeat - runTime;
-            if (remainder > 0) {
-                this.scheduled.add(remainder);
-                this.status.add(0.);
-                this.taskType.add(TaskType.IDLE);
+            // run shuffle
+            for (int j=0; j < job.getShuffles().size(); j++) {
+                Shuffle shuffle = job.getShuffles().get(j);
+                totalRunTime += runTask(shuffle);
             }
+
+            // run sort
+            for (int j=0; j < job.getSorts().size(); j++) {
+                Sort sort = job.getSorts().get(j);
+                totalRunTime += runTask(sort);
+            }
+
+            // run reducer
+            for (int j=0; j < job.getReducers().size(); j++) {
+                Reducer reducer = job.getReducers().get(j);
+                totalRunTime += runTask(reducer);
+            }
+
         }
 
         for (int i=0; i<this.scheduled.size(); i++) {
             System.out.println(this.status.get(i) + " \t " + this.scheduled.get(i) + " \t " + this.taskType.get(i));
         }
-
-        // run shuffle
-
-        // run sort
-
-        // run reducer
-
-//        for (int i=0; i<this.cpu; i++) {
-//            if (jobs.size() > 0) {
-//                Job jobRun = jobs.removeLast();
-//                System.out.println("Job length: " + jobRun.getJobLength());
-//                double length = jobRun.getJobLength() / this.cpu;
-//                System.out.println("Job length: " + length);
-//                cpuLoads[i] = jobRun.getCpuLoad();
-//                memLoads += jobRun.getIOLoad();
-//
-//                // add the job run to timeline, as much as the job time
-//                for (int t=0; t<length; t++) {
-//                    if (jobRun instanceof Mapper)
-//                        Time.times.get(this.nodeID).get(i).add(Status.RUN_MAP);
-//                    else if (jobRun instanceof Reducer)
-//                        Time.times.get(this.nodeID).get(i).add(Status.RUN_REDUCE);
-//                    else if (jobRun instanceof Shuffle)
-//                        Time.times.get(this.nodeID).get(i).add(Status.RUN_SHUFFLE);
-//                    else
-//                        Time.times.get(this.nodeID).get(i).add(Status.RUN_SORT);
-//                }
-//            }
-//        }
+        System.out.println("Total run time: " + totalRunTime);
 
         this.memoryloads = memLoads;
+    }
+
+    public double runTask(MRTask mrTask) {
+        // todo:
+        double totalRunTime = 0;
+
+        double taskLength = mrTask.getTaskLength();
+        double runTime = this.getProcessingSpeed(taskLength);
+        int hbCount = (int) runTime / MRConfigs.heartbeat;
+
+        for (int j=0; j<hbCount; j++) {
+            this.scheduled.add((double) MRConfigs.heartbeat);
+            this.status.add(1.);
+            if (mrTask instanceof Mapper)
+                this.taskType.add(TaskType.MAPPER);
+            else if (mrTask instanceof Shuffle)
+                this.taskType.add(TaskType.SHUFFLE);
+            else if (mrTask instanceof Sort)
+                this.taskType.add(TaskType.SORT);
+            else
+                this.taskType.add(TaskType.REDUCER);
+
+            runTime -= MRConfigs.heartbeat;
+
+            totalRunTime += MRConfigs.heartbeat;
+        }
+
+        totalRunTime += runTime;
+        this.scheduled.add(runTime);
+        this.status.add(1.);
+        if (mrTask instanceof Mapper)
+            this.taskType.add(TaskType.MAPPER);
+        else if (mrTask instanceof Shuffle)
+            this.taskType.add(TaskType.SHUFFLE);
+        else if (mrTask instanceof Sort)
+            this.taskType.add(TaskType.SORT);
+        else
+            this.taskType.add(TaskType.REDUCER);
+
+        double remainder = MRConfigs.heartbeat - runTime;
+        if (remainder > 0) {
+            totalRunTime += remainder;
+            this.scheduled.add(remainder);
+            this.status.add(0.);
+            this.taskType.add(TaskType.IDLE);
+        }
+
+        return totalRunTime;
     }
 
     public double ping(Node node) {

@@ -1,9 +1,9 @@
 package mapreduce;
 
-public class Shuffle extends Job {
+public class Shuffle extends MRTask {
 
-    public Shuffle(int jobID, int userID, double IOLoad, double cpuLoad, double jobLength) {
-        super(jobID, userID, IOLoad, cpuLoad, jobLength);
+    public Shuffle(int taskID, int userID, double jobLength) {
+        super(taskID, userID, jobLength);
     }
 
 }

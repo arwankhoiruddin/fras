@@ -59,7 +59,10 @@ public class Job {
     public double getJobLength() { return this.jobLength; }
 
     public void addMapper(Mapper mapper) {
-        this.mappers.add(mapper);
+        if (mapper.getUserID() == this.userID)
+            this.mappers.add(mapper);
+        else
+            System.err.println("Incompatible user ID");
     }
 
     public LinkedList<Mapper> getMappers() {
@@ -67,7 +70,10 @@ public class Job {
     }
 
     public void addShuffle(Shuffle shuffle) {
-        this.shuffles.add(shuffle);
+        if (shuffle.getUserID() == this.userID)
+            this.shuffles.add(shuffle);
+        else
+            System.err.println("Incompatible user ID");
     }
 
     public LinkedList<Shuffle> getShuffles() {
@@ -75,7 +81,10 @@ public class Job {
     }
 
     public void addSort(Sort sort) {
-        this.sorts.add(sort);
+        if (sort.getUserID() == this.getUserID())
+            this.sorts.add(sort);
+        else
+            System.err.println("Incompatible user ID");
     }
 
     public LinkedList<Sort> getSorts() {
@@ -83,7 +92,10 @@ public class Job {
     }
 
     public void addReducer(Reducer reducer) {
-        this.reducers.add(reducer);
+        if (reducer.getUserID() == this.userID)
+            this.reducers.add(reducer);
+        else
+            System.err.println("Incompatible user ID");
     }
 
     public LinkedList<Reducer> getReducers() {

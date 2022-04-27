@@ -3,7 +3,9 @@ package com.fras;
 import cluster.*;
 import common.Functions;
 import mapreduce.Job;
+import mapreduce.MRTask;
 import mapreduce.Mapper;
+import mapreduce.Reducer;
 import net.sourceforge.jFuzzyLogic.FIS;
 import org.junit.jupiter.api.Test;
 
@@ -375,9 +377,14 @@ public class TestFunctions {
     @Test
     public void testRunMapper() {
         Map userBlock = new HashMap();
-        Mapper mapper = new Mapper(0, 0, 0.5, 0.3, 10);
+        Mapper mapper = new Mapper(0, 0, 10);
         Job job = new Job(0, 0);
         job.addMapper(mapper);
+    }
 
+    @Test
+    public void testMRTaskSub() {
+        Mapper mapper = new Mapper(0, 0, 10);
+        Reducer reducer = new Reducer(0, 0, 10);
     }
 }

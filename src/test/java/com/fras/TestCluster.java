@@ -144,7 +144,9 @@ public class TestCluster {
     public void testTimeLine4Map() {
         int numNode = 0;
         int numVCore = 0;
-        Mapper job = new Mapper(0, 0, 0.5, 0.5, 20);
+        Mapper mapper = new Mapper(0, 0, 20);
+        Job job = new Job(0, 0);
+        job.addMapper(mapper);
         Cluster.nodes[0].addJob(job);
         Cluster.nodes[0].runJob();
         assert Time.times.get(numNode).get(numVCore).size() == 20;
@@ -155,7 +157,9 @@ public class TestCluster {
     public void testTimeLine4Reducer() {
         int numNode = 0;
         int numVCore = 0;
-        Reducer job = new Reducer(0, 0, 0.5, 0.5, 20);
+        Reducer reducer = new Reducer(0, 0, 20);
+        Job job = new Job(0, 0);
+        job.addReducer(reducer);
         Cluster.nodes[0].addJob(job);
         Cluster.nodes[0].runJob();
         assert Time.times.get(numNode).get(numVCore).size() == 20;
@@ -166,7 +170,11 @@ public class TestCluster {
     public void testTimeLine4Shuffle() {
         int numNode = 0;
         int numVCore = 0;
-        Shuffle job = new Shuffle(0, 0, 0.5, 0.5, 20);
+        Shuffle shuffle = new Shuffle(0, 0, 20);
+
+        Job job = new Job(0, 0);
+        job.addShuffle(shuffle);
+
         Cluster.nodes[0].addJob(job);
         Cluster.nodes[0].runJob();
         assert Time.times.get(numNode).get(numVCore).size() == 20;
@@ -177,7 +185,9 @@ public class TestCluster {
     public void testTimeLine4Sort() {
         int numNode = 0;
         int numVCore = 0;
-        Sort job = new Sort(0, 0, 0.5, 0.5, 20);
+        Sort sort = new Sort(0, 0, 20);
+        Job job = new Job(0, 0);
+        job.addSort(sort);
         Cluster.nodes[0].addJob(job);
         Cluster.nodes[0].runJob();
         assert Time.times.get(numNode).get(numVCore).size() == 20;
@@ -361,18 +371,18 @@ public class TestCluster {
     public void testProcessorSpeed() {
         Node node1 = new Node(0, 1, 4, new Disk(SataType.SATA1, 60));
         Job job = new Job(0, 1);
-        Mapper mapper = new Mapper(0, 1, 0.3, 0.8, 10);
+        Mapper mapper = new Mapper(0, 1, 10);
         job.addMapper(mapper);
         node1.addJob(job);
-        double speed1 = node1.getProcessingSpeed(job.getMappers().getLast().getJobLength());
+        double speed1 = node1.getProcessingSpeed(job.getMappers().getLast().getTaskLength());
         assert speed1 == 10;
 
         Node node2 = new Node(1, 2, 2, new Disk(SataType.SATA1, 60));
         Job job2 = new Job(0, 1);
-        Mapper mapper2 = new Mapper(0, 1, 0.3, 0.8, 200);
+        Mapper mapper2 = new Mapper(0, 1, 200);
         job2.addMapper(mapper2);
         node2.addJob(job2);
-        double speed2 = node2.getProcessingSpeed(job2.getMappers().getLast().getJobLength());
+        double speed2 = node2.getProcessingSpeed(job2.getMappers().getLast().getTaskLength());
         assert speed2 == 100;
     }
 }
