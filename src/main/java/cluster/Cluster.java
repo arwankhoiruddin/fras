@@ -13,11 +13,18 @@ public class Cluster {
     public static User[] users = new User[MRConfigs.numUsers];
     public static int numBlocks;
     public static LinkedList liveNodes = new LinkedList();
+
     public static int blockID = 0;
+    public static int taskID = 0;
+    public static int jobID = 0;
 
     public static Map<Integer, Integer> blockUserID = new HashMap<>();  // key: blockID, value: userID
     public static Map<Integer, Integer> blockPlacement = new HashMap<>(); // key: blockID, value: node
     public static Map<Integer, List<Integer>> replications = new HashMap<>(); // key: blockID, values: nodes to put the replicas
+
+    public static int[][] taskLengths = new int[MRConfigs.numUsers][4]; // mapper, shuffle, sort, reducer
+
+    public static double totalMakeSpan = 0;
 
     public Cluster() {
         // init nodes

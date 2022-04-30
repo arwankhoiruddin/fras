@@ -3,6 +3,7 @@ package com.fras;
 import cluster.*;
 import common.MRConfigs;
 import fifo.FifoScheduler;
+import fras.BlockPlacementStrategy;
 import fras.FRAS;
 import late.LATEScheduler;
 import mapreduce.*;
@@ -189,11 +190,16 @@ public class TestHadoop {
 
         // init nodes
 
+        MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FRAS;
+
         MRConfigs.numNodes = 8;
         Cluster.nodes = new Node[MRConfigs.numNodes];
 
+        int[] cpu = {4, 1, 2, 8, 10, 16, 6, 4};
+        int[] ram = {12, 4, 8, 16, 20, 20, 8, 8};
+
         for (int i = 0; i < MRConfigs.numNodes; i++) {
-            Cluster.nodes[i] = new Node(i, MRConfigs.ramPerNodes, MRConfigs.vCpuPerNodes, new Disk(SataType.SATA3, MRConfigs.diskSpacePerNodes));
+            Cluster.nodes[i] = new Node(i, cpu[i], ram[i], new Disk(SataType.SATA3, MRConfigs.diskSpacePerNodes));
         }
 
         // init links --> Hadoop assumes that the topology used is tree topology
@@ -224,6 +230,9 @@ public class TestHadoop {
         Cluster.users = new User[1];
         Cluster.users[0] = user1;
 
+        int[] taskLengths = {10, 20, 30, 40};
+        Cluster.taskLengths[user1.getUserID()] = taskLengths;
+
         HDFS.put();
 
         // see the blocks on each node
@@ -232,6 +241,9 @@ public class TestHadoop {
         }
 
         MapReduce.runMR();
+
+        System.out.println("==========================================");
+        System.out.println("Total makespan: " + Cluster.totalMakeSpan);
 
         // check blocks
     }

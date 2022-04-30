@@ -99,7 +99,23 @@ public class MapReduce {
         // try to execute mappers on the original block
         for (int i=0; i<Cluster.blockID; i++) {
             int nodeHavingBlock = Cluster.blockPlacement.get(i);
-            System.out.println("Block ID: " + i + " belongs to user " + Cluster.blockUserID.get(i) + " is placed in node " + nodeHavingBlock);
+            int userID = Cluster.blockUserID.get(i);
+            System.out.println("Block ID: " + i + " belongs to user " + userID + " is placed in node " + nodeHavingBlock);
+
+            // send the mapper in the node having block
+            Mapper mapper = new Mapper(Cluster.taskID++, userID, Cluster.taskLengths[userID][0]);
+            Shuffle shuffle = new Shuffle(Cluster.taskID++, userID, Cluster.taskLengths[userID][1]);
+            Sort sort = new Sort(Cluster.taskID++, userID, Cluster.taskLengths[userID][2]);
+            Reducer reducer = new Reducer(Cluster.taskID++, userID, Cluster.taskLengths[userID][3]);
+
+            Job job = new Job(Cluster.jobID++, Cluster.blockUserID.get(i));
+
+            job.addMapper(mapper);
+            job.addShuffle(shuffle);
+            job.addSort(sort);
+            job.addReducer(reducer);
+
+            Cluster.nodes[nodeHavingBlock].addJob(job);
 
             // run mapper in the available block
 //            Cluster.nodes[nodeHavingBlock].addJob(new Mapper(0, Cluster.blockUserID.get(i), 10));

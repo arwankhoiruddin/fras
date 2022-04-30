@@ -2,6 +2,8 @@ package com.fras;
 
 import cluster.*;
 import common.Functions;
+import common.MRConfigs;
+import common.Ping;
 import mapreduce.Job;
 import mapreduce.MRTask;
 import mapreduce.Mapper;
@@ -32,13 +34,13 @@ public class TestFunctions {
         switch1.connectParentSwitch(mainSwitch);
         switch2.connectParentSwitch(mainSwitch);
 
-        int numNodes = 8;
-        Cluster.nodes = new Node[numNodes];
+        MRConfigs.numNodes = 8;
+        Cluster.nodes = new Node[MRConfigs.numNodes];
 
         int[] cpus = {1, 4, 2, 6, 12, 8, 10, 4};
         int[] rams = {4, 4, 16, 10, 8, 8, 20, 6};
 
-        for (int i=0; i<numNodes; i++) {
+        for (int i=0; i<MRConfigs.numNodes; i++) {
             Cluster.nodes[i] = new Node(0, cpus[i], rams[i], new Disk(SataType.SATA1, 60));
 
             if (i < 4)
@@ -47,27 +49,7 @@ public class TestFunctions {
                 Cluster.nodes[i].connectSwitch(switch2);
         }
 
-        // find the Graph Values
-        double[] nodeVal = new double[numNodes];
-        String fclFile = "gnn.fcl";
-        FIS fis = FIS.load(fclFile, true);
-
-        if (fis == null)
-            System.err.println("Cannot load file");
-
-        for (int i=0; i<numNodes; i++) {
-            nodeVal[i] = 0;
-            for (int j=0; j<numNodes; j++) {
-                fis.setVariable("ping", Cluster.nodes[i].ping(Cluster.nodes[j]));
-                fis.setVariable("cpu", Cluster.nodes[i].getCpu());
-                fis.setVariable("ram", Cluster.nodes[i].getRam());
-
-                fis.evaluate();
-                nodeVal[i] += fis.getVariable("priority").getValue();
-            }
-            System.out.println("NodeVal " + i + ": " + nodeVal[i]);
-        }
-
+        System.out.println("Max node weight: " + Functions.maxNodeWeight());
     }
 
     @Test
@@ -77,6 +59,14 @@ public class TestFunctions {
         fuzzyVar.put("cpu", 1.);
         fuzzyVar.put("ram", 4.);
         System.out.println("FIS Result: " + Functions.fuzzyInference("gnn.fcl", fuzzyVar, "priority"));
+    }
+
+    @Test
+    public void testTaskLengthConfig() {
+        int[] user1Length = {10, 20, 30};
+        int[] user2Length = {20, 30, 40};
+        Cluster.taskLengths[0] = user1Length;
+        Cluster.taskLengths[1] = user2Length;
     }
 
     @Test
@@ -92,6 +82,86 @@ public class TestFunctions {
             }
         }
         System.out.println("Index of minimum value: " + minIdx);
+    }
+
+    @Test
+    public void testRoulette() {
+        int[] cpu = {4, 1, 2, 4, 2, 16, 6, 4};
+        int[] ram = {12, 4, 8, 4, 4, 20, 8, 8};
+
+        MRConfigs.numNodes = cpu.length;
+
+        for (int i = 0; i < MRConfigs.numNodes; i++) {
+            Cluster.nodes[i] = new Node(i, cpu[i], ram[i], new Disk(SataType.SATA3, MRConfigs.diskSpacePerNodes));
+        }
+
+        // init links --> Hadoop assumes that the topology used is tree topology
+        // so we will divide the nodes into two racks
+        int nodePerRack = MRConfigs.numNodes / 2;
+
+        // main switch
+        Switch mainSwitch = new Switch(0, LinkType.TENGIGABIT);
+
+        // switches for racks
+        Switch switch1 = new Switch(1, LinkType.GIGABIT);
+        Switch switch2 = new Switch(2, LinkType.GIGABIT);
+        switch1.connectParentSwitch(mainSwitch);
+        switch2.connectParentSwitch(mainSwitch);
+
+        for (int i=0; i<MRConfigs.numNodes; i++) {
+            if (i < nodePerRack) {
+                // first rack
+                Cluster.nodes[i].connectSwitch(switch1);
+            } else {
+                // second rack
+                Cluster.nodes[i].connectSwitch(switch2);
+            }
+        }
+
+        boolean multiple = true;
+
+        if (multiple) {
+            int[] freq = new int[MRConfigs.numNodes];
+            for (int i = 0; i < 100; i++) {
+                int chosen = Functions.randGNNRoulette();
+                freq[chosen]++;
+            }
+
+            for (int i = 0; i < freq.length; i++) {
+                System.out.println(i + "\t" + cpu[i] + "\t" + ram[i] + "\t" + freq[i]);
+            }
+        } else {
+            System.out.println(Functions.randGNNRoulette());
+        }
+    }
+
+    @Test
+    public void testDoubleRandom() {
+        int n=100;
+        double[] rand = new double[n];
+        for (int i=0; i<n; i++) {
+            rand[i] = new Random().nextDouble();
+        }
+
+        Functions.plotArray(rand, "random");
+    }
+
+    @Test
+    public void testPlotArray() {
+        LinkedList<Long> n = new LinkedList<>();
+        for (int i=0; i<200; i++) {
+            n.add(new Random().nextLong(10000));
+        }
+
+        Functions.plotList(n, "test");
+    }
+
+    @Test
+    public void testPlotList() throws Exception {
+        Ping.measureProcess();
+        Ping.pingSeveralTimes("139.59.111.23", 100);
+//        Functions.printListToFile("ping.txt", Ping.pings);
+        Functions.plotList(Ping.pings, "Ping for DigitalOcean");
     }
 
     @Test

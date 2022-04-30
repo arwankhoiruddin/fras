@@ -167,11 +167,14 @@ public class Node {
         }
         System.out.println("Total run time: " + totalRunTime);
 
+        if (totalRunTime > Cluster.totalMakeSpan)
+            Cluster.totalMakeSpan = totalRunTime;
+
         this.memoryloads = memLoads;
     }
 
     public double runTask(MRTask mrTask) {
-        // todo:
+        // todo: fifo, capacity scheduler, and FRAS
         double totalRunTime = 0;
 
         double taskLength = mrTask.getTaskLength();

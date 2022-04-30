@@ -1,0 +1,12 @@
+Inputs from Dr Nordin (27 April 2022)
+
+get from the real mapreduce
+or run several times with random
+is it work on extremes and in-between
+min, max, standard deviation, mean
+experimental setup based on real scenario
+
+1. need proper *experimental structure*
+2. if possible, fine tune the fuzzy logic to accommodate the heterogeneity (add rules)
+
+https://onlinegdb.com/AlTmu0Ti5

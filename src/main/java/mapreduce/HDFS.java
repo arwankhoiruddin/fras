@@ -7,6 +7,7 @@ import cluster.Switch;
 import common.Functions;
 import common.Log;
 import common.MRConfigs;
+import fras.BlockPlacementStrategy;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -91,9 +92,14 @@ public class HDFS {
     private static void distributeBlock(Block block, int numReplication) {
         // https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsBlockPlacementPolicies.html
 
-        System.out.println("Block number " + block.getBlockID() + " distribution in the same rack");
-        // send the new block to the cluster
-        int nodeNumber = getRandomNodeSameRack(0); // arwan todo: we can play around here
+        int nodeNumber = 0;
+        if (MRConfigs.blockPlacementStrategy == BlockPlacementStrategy.DEFAULT) {
+            System.out.println("Block number " + block.getBlockID() + " distribution in the same rack");
+            nodeNumber = getRandomNodeSameRack(0); // arwan todo: we can play around here
+        } else { // Fuzzy Resource Aware Block Placement
+            System.out.println("Block number: " + block.getBlockID() + " distribution in the best node");
+            nodeNumber = Functions.maxNodeWeight();
+        }
 
         Cluster.nodes[0].sendData(Cluster.nodes[nodeNumber], block);
         Cluster.blockPlacement.put(Cluster.blockID, nodeNumber);
@@ -126,6 +132,8 @@ public class HDFS {
         // note the block distribution in NameNode
         Cluster.blockID++;
     }
+
+
 
     public static void put(int userID) {
         // split the data into blocks

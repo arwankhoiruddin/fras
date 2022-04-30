@@ -4,10 +4,13 @@ import cluster.Cluster;
 import cluster.Link;
 import mapreduce.Job;
 import net.sourceforge.jFuzzyLogic.FIS;
+import net.sourceforge.jFuzzyLogic.rule.Variable;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Random;
 
 import static common.MRConfigs.numNodes;
 
@@ -103,7 +106,7 @@ public class Functions {
         chart.showChart();
     }
 
-    public static void plotList(LinkedList list, String dataName) {
+    public static void plotList(LinkedList<Long> list, String dataName) {
         double[] xData = new double[list.size()];
         for (int i=0; i<xData.length; i++) {
             xData[i] = i;
@@ -112,8 +115,7 @@ public class Functions {
         // convert linkedList into array
         double[] yData = new double[list.size()];
         for (int i=0; i<list.size(); i++) {
-            Long l = (Long) list.get(i);
-            yData[i] = (double) l;
+            yData[i] = (double) list.get(i);
         }
 
         LineChart chart = new LineChart("MapRedSim");
@@ -168,6 +170,22 @@ public class Functions {
         chart.showChart();
     }
 
+    public static LinkedList ArrayToLinkedList(int[] array) {
+        LinkedList list = new LinkedList();
+        for (double a:array) {
+            list.add(a);
+        }
+        return list;
+    }
+
+    public static LinkedList ArrayToLinkedList(double[] array) {
+        LinkedList list = new LinkedList();
+        for (double a:array) {
+            list.add(a);
+        }
+        return list;
+    }
+
     public static int getNumberOfBlocks(double dataSize) {
         System.out.println("Size of data: " + dataSize + " block size: " + MRConfigs.blockSize);
         int numBlocks = (int) Math.ceil(dataSize*1024 / MRConfigs.blockSize);
@@ -190,6 +208,69 @@ public class Functions {
         fis.evaluate();
         return fis.getVariable(resultVarName).getValue();
 
+    }
+
+    public static int maxNodeWeight() {
+        double[] nodeVal = GNN();
+        int idxMax = 0;
+        double max = -100;
+        for (int i=0; i<nodeVal.length; i++) {
+            if (nodeVal[i] > max) {
+                max = nodeVal[i];
+                idxMax = i;
+            }
+        }
+        return idxMax;
+    }
+
+    public static int randGNNRoulette() {
+        double[] vals = GNN();
+        double total = 0;
+
+        for (int i=0; i<vals.length; i++) {
+            total += vals[i];
+//            System.out.println(i + "\t" + vals[i]);
+        }
+
+        double rand = new Random().nextDouble();
+        double portion = 0;
+        double temp = 0;
+
+        int i=0;
+        for (i=0; i<vals.length; i++) {
+            temp += vals[i];
+            portion = temp / total;
+            if (rand < portion) break;
+        }
+
+        return i;
+    }
+
+    public static double[] GNN() {
+        // find the Graph Values
+        double[] nodeVal = new double[MRConfigs.numNodes];
+        String fclFile = "gnn.fcl";
+        FIS fis = FIS.load(fclFile, true);
+
+        if (fis == null)
+            System.err.println("Cannot load file");
+
+        for (int i=0; i<MRConfigs.numNodes; i++) {
+            nodeVal[i] = 0;
+            for (int j=0; j<MRConfigs.numNodes; j++) {
+                fis.setVariable("ping", Cluster.nodes[i].ping(Cluster.nodes[j]));
+                fis.setVariable("cpu", Cluster.nodes[i].getCpu());
+                fis.setVariable("ram", Cluster.nodes[i].getRam());
+                fis.setVariable("neighCPU", Cluster.nodes[j].getCpu());
+                fis.setVariable("neighRAM", Cluster.nodes[j].getRam());
+
+                fis.evaluate();
+                Variable priority = fis.getVariable("priority");
+
+                nodeVal[i] += fis.getVariable("priority").getValue();
+            }
+        }
+        return nodeVal;
     }
 
     public static int[][] convolution(int[][] a) {
