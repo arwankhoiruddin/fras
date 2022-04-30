@@ -26,6 +26,42 @@ public class TestFunctions {
     }
 
     @Test
+    public void testGNNMatrix() {
+        Switch mainSwitch = new Switch(0, LinkType.TENGIGABIT);
+        Switch switch1 = new Switch(1, LinkType.GIGABIT);
+        Switch switch2 = new Switch(2, LinkType.FIVEGIGABIT);
+
+        switch1.connectParentSwitch(mainSwitch);
+        switch2.connectParentSwitch(mainSwitch);
+
+        MRConfigs.numNodes = 8;
+        Cluster.nodes = new Node[MRConfigs.numNodes];
+
+        int[] cpus = {1, 4, 2, 6, 1, 12, 1, 4};
+        int[] rams = {4, 4, 16, 10, 4, 20, 2, 6};
+
+        for (int i=0; i<MRConfigs.numNodes; i++) {
+            Cluster.nodes[i] = new Node(0, cpus[i], rams[i], new Disk(SataType.SATA1, 60));
+
+            if (i < 4)
+                Cluster.nodes[i].connectSwitch(switch1);
+            else
+                Cluster.nodes[i].connectSwitch(switch2);
+        }
+
+        double[][] matrix = Functions.GNNMatrix();
+
+        for (int i=0; i<matrix.length; i++) {
+            for (int j=0; j<matrix[i].length; j++) {
+                System.out.print(matrix[i][j] + " ");
+            }
+            System.out.println();
+        }
+
+        Functions.printArrayToFile("matrix.txt", matrix);
+    }
+
+    @Test
     public void testGNN() {
         Switch mainSwitch = new Switch(0, LinkType.TENGIGABIT);
         Switch switch1 = new Switch(1, LinkType.GIGABIT);
@@ -48,6 +84,8 @@ public class TestFunctions {
             else
                 Cluster.nodes[i].connectSwitch(switch2);
         }
+
+        double[] matrix = Functions.GNN();
 
         System.out.println("Max node weight: " + Functions.maxNodeWeight());
     }
@@ -143,7 +181,7 @@ public class TestFunctions {
             rand[i] = new Random().nextDouble();
         }
 
-        Functions.plotArray(rand, "random");
+        Functions.printArrayToFile("test.txt", rand);
     }
 
     @Test

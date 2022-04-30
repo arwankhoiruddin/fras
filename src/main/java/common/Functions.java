@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
 
+
 import static common.MRConfigs.numNodes;
 
 public class Functions {
@@ -90,6 +91,29 @@ public class Functions {
         try (PrintWriter writer = new PrintWriter(fileName, "UTF-8")) {
             for (Object o : list) {
                 writer.println(o);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void printArrayToFile(String fileName, double[] array) {
+        try (PrintWriter writer = new PrintWriter(fileName, "UTF-8")) {
+            for (Object o : array) {
+                writer.println(o);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void printArrayToFile(String fileName, double[][] array) {
+        try (PrintWriter writer = new PrintWriter(fileName, "UTF-8")) {
+            for (int i=0; i<array.length; i++) {
+                for (int j=0; j<array[i].length; j++) {
+                    writer.print(array[i][j] + "\t");
+                }
+                writer.println();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -271,6 +295,41 @@ public class Functions {
             }
         }
         return nodeVal;
+    }
+
+    public static double[][] GNNMatrix() {
+        // find the Graph Values
+        double[] nodeVal = new double[MRConfigs.numNodes];
+        double[][] matrix = new double[MRConfigs.numNodes][MRConfigs.numNodes];
+
+        String fclFile = "gnn.fcl";
+        FIS fis = FIS.load(fclFile, true);
+
+        if (fis == null)
+            System.err.println("Cannot load file");
+
+        for (int i=0; i<MRConfigs.numNodes; i++) {
+            nodeVal[i] = 0;
+            for (int j=0; j<MRConfigs.numNodes; j++) {
+                fis.setVariable("ping", Cluster.nodes[i].ping(Cluster.nodes[j]));
+                fis.setVariable("cpu", Cluster.nodes[i].getCpu());
+                fis.setVariable("ram", Cluster.nodes[i].getRam());
+                fis.setVariable("neighCPU", Cluster.nodes[j].getCpu());
+                fis.setVariable("neighRAM", Cluster.nodes[j].getRam());
+
+                fis.evaluate();
+                Variable priority = fis.getVariable("priority");
+                matrix[i][j] = priority.getValue();
+
+                System.out.println("Node " + i + " to Node " + j + ": " + priority.getValue());
+                System.out.println("CPU: " + Cluster.nodes[i].getCpu() + " RAM: " + Cluster.nodes[i].getRam());
+                System.out.println("Ping: " + Cluster.nodes[i].ping(Cluster.nodes[j]));
+                System.out.println("Neighbor CPU: " + Cluster.nodes[j].getCpu() + " RAM: " + Cluster.nodes[j].getRam());
+
+                nodeVal[i] += fis.getVariable("priority").getValue();
+            }
+        }
+        return matrix;
     }
 
     public static int[][] convolution(int[][] a) {

@@ -50,12 +50,12 @@ RULEBLOCK No1
 	ACT : MIN;			// Use 'min' activation method
 	ACCU : MAX;			// Use 'max' accumulation method
 
-	RULE 1 : IF ping IS low THEN priority IS high;
-    RULE 2 : IF ping IS high THEN priority IS low;
-    RULE 3 : IF cpu IS low OR ram IS low THEN priority IS low;
-    RULE 4 : IF cpu IS high OR ram IS high THEN priority IS high;
-    RULE 5 : IF neighCPU is high AND neighRAM is high AND ping IS low THEN priority IS high;
-    RULE 6 : IF neighCPU is low AND neighRAM is low AND ping IS high THEN priority IS low;
+    RULE 1 : IF cpu IS low AND ram IS low AND ping IS high THEN priority IS low;
+    RULE 2 : IF cpu IS high AND ram IS high AND ping IS low THEN priority IS high;
+    RULE 3 : IF neighCPU is high AND neighRAM is high AND ping IS low THEN priority IS high;
+    RULE 4 : IF neighCPU is low AND neighRAM is low AND ping IS high THEN priority IS low;
+    RULE 5 : IF cpu IS high AND ram IS high AND neighCPU is high AND neighRAM is high THEN priority IS high;
+    RULE 6 : IF cpu IS low AND ram IS low AND neighCPU is low AND neighRAM is low THEN priority IS low;
 END_RULEBLOCK
 
 END_FUNCTION_BLOCK
