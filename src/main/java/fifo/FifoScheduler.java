@@ -1,6 +1,7 @@
 package fifo;
 
 import common.Functions;
+import common.Log;
 import mapreduce.Job;
 import yarn.JobScheduler;
 import yarn.Scheduler;
@@ -12,7 +13,7 @@ public class FifoScheduler extends Scheduler implements JobScheduler {
     public LinkedList<Job> scheduleJob(LinkedList<Job> jobs) {
         // just return the jobs as is
 
-        System.out.println("This is FIFO");
+        Log.debug("This is FIFO");
         return jobs;
     }
 
@@ -53,7 +54,7 @@ public class FifoScheduler extends Scheduler implements JobScheduler {
             }
             Functions.printList(scheduled[i]);
         }
-        System.out.println("Max length: " + maxLength + " idx: " + idxMax);
+        Log.debug("Max length: " + maxLength + " idx: " + idxMax);
 
         // fill the rest with zeros
         for (int i=0; i<nProcessor; i++) {

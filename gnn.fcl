@@ -13,8 +13,8 @@ VAR_OUTPUT				// Define output variable
 END_VAR
 
 FUZZIFY ping
-	TERM low := (0, 0.1) (1, 0) ;
-	TERM high := (0, 0) (0.1, 0.1);
+	TERM low := (0, 0.4) (1, 0) ;
+	TERM high := (0, 0) (0.4, 1);
 END_FUZZIFY
 
 FUZZIFY cpu
@@ -52,10 +52,10 @@ RULEBLOCK No1
 
     RULE 1 : IF cpu IS low AND ram IS low AND ping IS high THEN priority IS low;
     RULE 2 : IF cpu IS high AND ram IS high AND ping IS low THEN priority IS high;
-    RULE 3 : IF neighCPU is high AND neighRAM is high AND ping IS low THEN priority IS high;
-    RULE 4 : IF neighCPU is low AND neighRAM is low AND ping IS high THEN priority IS low;
-    RULE 5 : IF cpu IS high AND ram IS high AND neighCPU is high AND neighRAM is high THEN priority IS high;
-    RULE 6 : IF cpu IS low AND ram IS low AND neighCPU is low AND neighRAM is low THEN priority IS low;
+    // RULE 3 : IF neighCPU is high AND neighRAM is high AND ping IS low THEN priority IS high;
+    // RULE 4 : IF neighCPU is low AND neighRAM is low AND ping IS high THEN priority IS low;
+    // RULE 5 : IF cpu IS high AND ram IS high AND neighCPU is high AND neighRAM is high THEN priority IS high;
+    // RULE 6 : IF cpu IS low AND ram IS low AND neighCPU is low AND neighRAM is low THEN priority IS low;
 END_RULEBLOCK
 
 END_FUNCTION_BLOCK

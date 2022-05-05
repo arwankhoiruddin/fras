@@ -37,6 +37,7 @@ public class MapReduce {
 
             // create job based on the block's userID
             for (int j=0; j<data.size(); j++) {
+//                int userID = data.removeFirst().getUserID();
                 int userID = data.get(j).getUserID();
                 Job job = new Job(jobID++, userID, Cluster.users[userID].getCpuLoad(), Cluster.users[userID].getIoLoad(), 20);
 
@@ -94,13 +95,13 @@ public class MapReduce {
 
         // check blocks placement
 
-        System.out.println("Cluster blockID: " + Cluster.blockID);
+        Log.debug("Cluster blockID: " + Cluster.blockID);
 
         // try to execute mappers on the original block
         for (int i=0; i<Cluster.blockID; i++) {
             int nodeHavingBlock = Cluster.blockPlacement.get(i);
             int userID = Cluster.blockUserID.get(i);
-            System.out.println("Block ID: " + i + " belongs to user " + userID + " is placed in node " + nodeHavingBlock);
+            Log.debug("Block ID: " + i + " belongs to user " + userID + " is placed in node " + nodeHavingBlock);
 
             // send the mapper in the node having block
             Mapper mapper = new Mapper(Cluster.taskID++, userID, Cluster.taskLengths[userID][0]);
@@ -116,11 +117,34 @@ public class MapReduce {
             job.addReducer(reducer);
 
             Cluster.nodes[nodeHavingBlock].addJob(job);
-
-            // run mapper in the available block
-//            Cluster.nodes[nodeHavingBlock].addJob(new Mapper(0, Cluster.blockUserID.get(i), 10));
-            Cluster.nodes[nodeHavingBlock].runJob();
         }
+
+        // execute on each node
+        for (int i=0; i<MRConfigs.numNodes; i++) {
+            int numJobs = Cluster.nodes[i].getJobs().size();
+            int numBlocks = Cluster.nodes[i].getDisk().getBlocks().size();
+
+            Log.debug("Node number: " + i + " has " + numJobs + " jobs and " + numBlocks + " data");
+
+            LinkedList jobs = Cluster.nodes[i].getJobs();
+            LinkedList blocks = Cluster.nodes[i].getDisk().getBlocks();
+
+            for (int j=0; j<numJobs; j++) {
+                Job job = (Job) jobs.get(j);
+                Log.debug("Job number " + job.getJobID() + " belongs to user " + job.getUserID());
+            }
+
+            Cluster.nodes[i].tryRunJob();
+        }
+
+//        for (int i=0; i<Cluster.blockID; i++) {
+//            int nodeHavingBlock = Cluster.blockPlacement.get(i);
+//
+//            // run mapper in the available block
+////            Cluster.nodes[nodeHavingBlock].addJob(new Mapper(0, Cluster.blockUserID.get(i), 10));
+//            Log.debug("Executing block " + i + " in node " + nodeHavingBlock);
+//            Cluster.nodes[nodeHavingBlock].runJob();
+//        }
         // if node having the original block failed, then execute the replica after next 3 heartbeat
         // generate intermediary result
         // execute shuffle

@@ -37,6 +37,7 @@ public class HDFS {
 
         for (int userID=0; userID< Cluster.users.length; userID++) {
             int numBlocks = Functions.getNumberOfBlocks(Cluster.users[userID].getDataSize());
+            Log.debug("Number of blocks: " + numBlocks);
 
             Log.debug("User ID: " + userID + ", Data size: " + Cluster.users[userID].getDataSize() + " GB, " +
                     "Replication strategy: " + MRConfigs.replicationStrategy + " number of blocks: " + numBlocks);
@@ -94,17 +95,16 @@ public class HDFS {
 
         int nodeNumber = 0;
         if (MRConfigs.blockPlacementStrategy == BlockPlacementStrategy.DEFAULT) {
-            System.out.println("Block number " + block.getBlockID() + " distribution in the same rack");
-            nodeNumber = getRandomNodeSameRack(0); // arwan todo: we can play around here
+            nodeNumber = getRandomNodeSameRack(0);
         } else { // Fuzzy Resource Aware Block Placement
-            System.out.println("Block number: " + block.getBlockID() + " distribution in the best node");
-            nodeNumber = Functions.maxNodeWeight();
+            nodeNumber = Functions.randGNNRoulette();  // arwan todo: we can play around here
         }
+        Log.debug("Original block number " + block.getBlockID() + " distributed to node " + nodeNumber);
 
         Cluster.nodes[0].sendData(Cluster.nodes[nodeNumber], block);
         Cluster.blockPlacement.put(Cluster.blockID, nodeNumber);
 
-        System.out.println("Block ID: " + Cluster.blockID);
+        Log.debug("Block ID: " + Cluster.blockID);
         Cluster.blockUserID.put(Cluster.blockID, block.getUserID());
 
         // replicate the block and send to other nodes
@@ -112,7 +112,7 @@ public class HDFS {
         int rep1 = getRandomNodeSameRack(nodeNumber);
         Cluster.nodes[0].sendData(Cluster.nodes[rep1], block);
 
-        System.out.println("Distribute block number " + block.getBlockID() + " to the different rack");
+        Log.debug("Distribute block number " + block.getBlockID() + " to the different rack");
 
         // send the second replica to other node in the different rack
         int nodeOtherRack = getRandomNodeDifferentRack(nodeNumber);

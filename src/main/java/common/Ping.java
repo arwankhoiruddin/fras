@@ -87,12 +87,12 @@ public class Ping {
                 Long time = connectFinish - connectStart;
                 result = Long.toString(time) + "ms";
                 Ping.pings.add(time);
-                System.out.println("Ping count: " + Ping.pingCount);
+                Log.debug("Ping count: " + Ping.pingCount);
             } else if (failure != null)
                 result = failure.toString();
             else
                 result = "Timed out";
-            System.out.println(address + " : " + result);
+            Log.debug(address + " : " + result);
             shown = true;
         }
 
@@ -306,7 +306,7 @@ public class Ping {
 
         for (int i = 0; i < numData; i++) {
             data[i] = (int) (Math.random() * 100);
-            System.out.println(data[i]);
+            Log.debug(data[i]);
         }
 
 
@@ -326,7 +326,7 @@ public class Ping {
                 }
             }
             long duration = System.nanoTime() - startTime;
-            System.out.println(duration);
+            Log.debug(duration);
             times.add(duration);
 
 //            Functions.printArray(tmp);

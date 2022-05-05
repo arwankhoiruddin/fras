@@ -1,6 +1,8 @@
 package com.fras;
 
 import cluster.*;
+import common.Functions;
+import common.Log;
 import common.MRConfigs;
 import fras.BlockPlacementStrategy;
 import mapreduce.HDFS;
@@ -63,7 +65,7 @@ public class ExperimentalResults {
 
         // see the blocks on each node
         for (int i=0; i<numNodes; i++) {
-            System.out.println("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+            Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
         }
     }
 
@@ -121,7 +123,7 @@ public class ExperimentalResults {
 
         // see the blocks on each node
         for (int i=0; i<numNodes; i++) {
-            System.out.println("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+            Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
         }
     }
 
@@ -174,13 +176,13 @@ public class ExperimentalResults {
 
         // see the blocks on each node
         for (int i=0; i<MRConfigs.numNodes; i++) {
-            System.out.println("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+            Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
         }
 
         MapReduce.runMR();
 
-        System.out.println("==========================================");
-        System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+        Log.debug("==========================================");
+        Log.debug("Total makespan: " + Cluster.totalMakeSpan);
     }
 
     @Test
@@ -232,13 +234,13 @@ public class ExperimentalResults {
 
         // see the blocks on each node
         for (int i=0; i<MRConfigs.numNodes; i++) {
-            System.out.println("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+            Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
         }
 
         MapReduce.runMR();
 
-        System.out.println("==========================================");
-        System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+        Log.debug("==========================================");
+        Log.debug("Total makespan: " + Cluster.totalMakeSpan);
     }
 
     @Test
@@ -294,13 +296,13 @@ public class ExperimentalResults {
 
         // see the blocks on each node
         for (int i=0; i<MRConfigs.numNodes; i++) {
-            System.out.println("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+            Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
         }
 
         MapReduce.runMR();
 
-        System.out.println("==========================================");
-        System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+        Log.debug("==========================================");
+        Log.debug("Total makespan: " + Cluster.totalMakeSpan);
     }
 
     @Test
@@ -356,13 +358,13 @@ public class ExperimentalResults {
 
         // see the blocks on each node
         for (int i=0; i<MRConfigs.numNodes; i++) {
-            System.out.println("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+            Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
         }
 
         MapReduce.runMR();
 
-        System.out.println("==========================================");
-        System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+        Log.debug("==========================================");
+        Log.debug("Total makespan: " + Cluster.totalMakeSpan);
     }
 
     @Test
@@ -424,13 +426,13 @@ public class ExperimentalResults {
 
         // see the blocks on each node
         for (int i=0; i<MRConfigs.numNodes; i++) {
-            System.out.println("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+            Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
         }
 
         MapReduce.runMR();
 
-        System.out.println("==========================================");
-        System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+        Log.debug("==========================================");
+        Log.debug("Total makespan: " + Cluster.totalMakeSpan);
     }
 
     @Test
@@ -491,13 +493,13 @@ public class ExperimentalResults {
 
         // see the blocks on each node
         for (int i=0; i<MRConfigs.numNodes; i++) {
-            System.out.println("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+            Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
         }
 
         MapReduce.runMR();
 
-        System.out.println("==========================================");
-        System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+        Log.debug("==========================================");
+        Log.debug("Total makespan: " + Cluster.totalMakeSpan);
     }
 
     @Test
@@ -558,13 +560,13 @@ public class ExperimentalResults {
 
         // see the blocks on each node
         for (int i=0; i<MRConfigs.numNodes; i++) {
-            System.out.println("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+            Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
         }
 
         MapReduce.runMR();
 
-        System.out.println("==========================================");
-        System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+        Log.debug("==========================================");
+        Log.debug("Total makespan: " + Cluster.totalMakeSpan);
     }
 
     @Test
@@ -625,12 +627,99 @@ public class ExperimentalResults {
 
         // see the blocks on each node
         for (int i=0; i<MRConfigs.numNodes; i++) {
-            System.out.println("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+            Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
         }
 
         MapReduce.runMR();
 
-        System.out.println("==========================================");
-        System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+        Log.debug("==========================================");
+        Log.debug("Total makespan: " + Cluster.totalMakeSpan);
+    }
+
+    @Test
+    public void testExperimentsGNN() {
+        Switch mainSwitch = new Switch(0, LinkType.TENGIGABIT);
+        Switch switch1 = new Switch(1, LinkType.GIGABIT);
+        Switch switch2 = new Switch(2, LinkType.FIVEGIGABIT);
+
+        switch1.connectParentSwitch(mainSwitch);
+        switch2.connectParentSwitch(mainSwitch);
+
+        int[] cpus = {1, 4, 2, 6, 1, 12, 1, 4};
+        int[] rams = {4, 4, 16, 10, 4, 20, 2, 6};
+
+        MRConfigs.numNodes = 8;
+        Cluster.nodes = new Node[MRConfigs.numNodes];
+
+        for (int i=0; i<MRConfigs.numNodes; i++) {
+            Cluster.nodes[i] = new Node(0, cpus[i], rams[i], new Disk(SataType.SATA1, 60));
+
+            if (i < 4)
+                Cluster.nodes[i].connectSwitch(switch1);
+            else
+                Cluster.nodes[i].connectSwitch(switch2);
+        }
+
+        double[][] matrix = Functions.GNNMatrix();
+
+        for (int i=0; i<matrix.length; i++) {
+            for (int j=0; j<matrix[i].length; j++) {
+                System.out.print(matrix[i][j] + " ");
+            }
+            System.out.println();
+        }
+
+        Functions.printArrayToFile("matrix.txt", matrix);
+    }
+
+    @Test
+    public void experiment1() {
+        Functions.clearLog();
+
+        MRConfigs.numNodes = 10;
+        MRConfigs.debugLog = true;
+        MRConfigs.displayLog = true;
+
+        MRConfigs.meanTaskLength = 4;
+        MRConfigs.stdDevTaskLength = 2;
+        MRConfigs.numUsers = 2;
+
+        int numExperiments = 10;
+        double[] makespans = new double[numExperiments];
+
+        int expVariation = 2;
+
+        for (int n=0; n<numExperiments; n++) {
+            Cluster.totalMakeSpan = 0;
+            System.out.println("Experiment number: " + n);
+            Cluster cluster = new Cluster();
+            cluster.randomInit();
+
+            for (int exp=0; exp<expVariation; exp++) {
+                // reset blockID
+                Cluster.blockID = 0;
+
+                switch (exp) {
+                    case 0: MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FRAS; break;
+                    case 1: MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.DEFAULT; break;
+                }
+
+                HDFS.put();
+
+                // see the blocks on each node
+                for (int i=0; i<MRConfigs.numNodes; i++) {
+                    Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+                }
+
+                MapReduce.runMR();
+
+                Log.debug("==========================================");
+                System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+                makespans[n] = Cluster.totalMakeSpan;
+            }
+
+        }
+
+        Functions.printArrayToFile("experiment1.txt", makespans);
     }
 }

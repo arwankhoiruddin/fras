@@ -2,12 +2,11 @@ package com.fras;
 
 import cluster.*;
 import common.Functions;
+import common.Log;
 import common.MRConfigs;
 import common.Ping;
-import mapreduce.Job;
-import mapreduce.MRTask;
-import mapreduce.Mapper;
-import mapreduce.Reducer;
+import fras.BlockPlacementStrategy;
+import mapreduce.*;
 import net.sourceforge.jFuzzyLogic.FIS;
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +22,45 @@ public class TestFunctions {
 
         int[][] conv = Functions.convolution(a, b);
         assert (Arrays.deepEquals(res, conv));
+    }
+
+    @Test
+    public void testStatRandomCPURAM() {
+        int minCPU = 1;
+        int minRAM = 1;
+        int maxCPU = 24;
+        int maxRAM = 24;
+
+        int stdDevCPU = 4;
+        int meanCPU = 12;
+        int stdDevRAM = 2;
+        int meanRAM = 16;
+
+        int numNodes = 100;
+
+        for (int i=0; i<numNodes; i++) {
+            if (new Random().nextBoolean() == true)
+                Log.debug(new Random().nextDouble());
+            else
+                Log.debug("-" + new Random().nextDouble());
+        }
+    }
+
+    @Test
+    public void testRandGen() {
+        int numNodes = 100;
+        int[] nodes = new int[numNodes];
+        for (int i=0; i<numNodes; i++) {
+            nodes[i] = Functions.randStatGen(MRConfigs.meanCPU, MRConfigs.stdDevCPU);
+        }
+        Functions.printArrayToFile("test.txt", nodes);
+    }
+
+    @Test
+    public void testRand() {
+        for (int i=0; i<10; i++) {
+            Log.debug(Functions.randStatGen(MRConfigs.meanLink, MRConfigs.stdLink) % 4);
+        }
     }
 
     @Test
@@ -87,7 +125,7 @@ public class TestFunctions {
 
         double[] matrix = Functions.GNN();
 
-        System.out.println("Max node weight: " + Functions.maxNodeWeight());
+        Log.debug("Max node weight: " + Functions.maxNodeWeight());
     }
 
     @Test
@@ -96,7 +134,7 @@ public class TestFunctions {
         fuzzyVar.put("ping", 0.5);
         fuzzyVar.put("cpu", 1.);
         fuzzyVar.put("ram", 4.);
-        System.out.println("FIS Result: " + Functions.fuzzyInference("gnn.fcl", fuzzyVar, "priority"));
+        Log.debug("FIS Result: " + Functions.fuzzyInference("gnn.fcl", fuzzyVar, "priority"));
     }
 
     @Test
@@ -119,15 +157,17 @@ public class TestFunctions {
                 minIdx = i;
             }
         }
-        System.out.println("Index of minimum value: " + minIdx);
+        Log.debug("Index of minimum value: " + minIdx);
     }
 
     @Test
     public void testRoulette() {
-        int[] cpu = {4, 1, 2, 4, 2, 16, 6, 4};
-        int[] ram = {12, 4, 8, 4, 4, 20, 8, 8};
+        int[] cpu = {4, 1, 2, 4, 2, 16, 1, 2};
+        int[] ram = {12, 4, 8, 4, 4, 20, 2, 3};
 
         MRConfigs.numNodes = cpu.length;
+
+        Cluster.nodes = new Node[MRConfigs.numNodes];
 
         for (int i = 0; i < MRConfigs.numNodes; i++) {
             Cluster.nodes[i] = new Node(i, cpu[i], ram[i], new Disk(SataType.SATA3, MRConfigs.diskSpacePerNodes));
@@ -156,6 +196,13 @@ public class TestFunctions {
             }
         }
 
+        // check ping
+        for (int i=0; i<MRConfigs.numNodes; i++) {
+            for (int j=0; j<MRConfigs.numNodes; j++) {
+                Log.debug("Ping from " + i + " to " + j + ": " + Cluster.nodes[i].ping(Cluster.nodes[j]));
+            }
+        }
+
         boolean multiple = true;
 
         if (multiple) {
@@ -166,10 +213,10 @@ public class TestFunctions {
             }
 
             for (int i = 0; i < freq.length; i++) {
-                System.out.println(i + "\t" + cpu[i] + "\t" + ram[i] + "\t" + freq[i]);
+                Log.debug(i + "\t" + cpu[i] + "\t" + ram[i] + "\t" + freq[i]);
             }
         } else {
-            System.out.println(Functions.randGNNRoulette());
+            Log.debug(Functions.randGNNRoulette());
         }
     }
 
@@ -215,7 +262,7 @@ public class TestFunctions {
 
         for (int i=0; i<jobs.length; i++) {
             runningTime = (double) jobs[i] / CPUSpeed;
-            System.out.println("Running time: " + runningTime);
+            Log.debug("Running time: " + runningTime);
             int hbCount = (int) runningTime / heartBeat;
             if (hbCount > 0) {
                 for (int j=0; j<(runningTime / heartBeat); j++) {
@@ -236,10 +283,10 @@ public class TestFunctions {
 
         double totalTime = 0;
         for (int i=0; i<status.size(); i++) {
-            System.out.println(status.get(i) + " \t " + scheduled.get(i));
+            Log.debug(status.get(i) + " \t " + scheduled.get(i));
             totalTime += (double) scheduled.get(i);
         }
-        System.out.println("Total time: " + totalTime);
+        Log.debug("Total time: " + totalTime);
 
     }
 
@@ -402,7 +449,7 @@ public class TestFunctions {
             }
             Functions.printList(scheduled[i]);
         }
-        System.out.println("Max length: " + maxLength + " idx: " + idxMax);
+        Log.debug("Max length: " + maxLength + " idx: " + idxMax);
 
         // fill the rest with zeros
         for (int i=0; i<nProcessor; i++) {
@@ -448,8 +495,8 @@ public class TestFunctions {
         blockMap.put(5, 2);
         blockMap.put(10, 2);
 
-        System.out.println("Block number 1 belongs to user number: " + blockMap.get(1));
-        System.out.println("Block number 10 belongs to user number: " + blockMap.get(10));
+        Log.debug("Block number 1 belongs to user number: " + blockMap.get(1));
+        Log.debug("Block number 10 belongs to user number: " + blockMap.get(10));
     }
 
     @Test
@@ -472,11 +519,11 @@ public class TestFunctions {
 
         // block x belongs to user y is placed in node z
         for (int i=1; i<=userBlock.size(); i++) {
-            System.out.println("Block " + i + " belongs to user " + userBlock.get(i) + " is placed in node " + blockPlacement.get(i));
+            Log.debug("Block " + i + " belongs to user " + userBlock.get(i) + " is placed in node " + blockPlacement.get(i));
             if (replications.get(i) != null) {
                 ArrayList rep = (ArrayList) replications.get(i);
                 for (int j=0; j< rep.size(); j++) {
-                    System.out.println("Replica in node: " + rep.get(j));
+                    Log.debug("Replica in node: " + rep.get(j));
                 }
             }
         }
@@ -494,5 +541,38 @@ public class TestFunctions {
     public void testMRTaskSub() {
         Mapper mapper = new Mapper(0, 0, 10);
         Reducer reducer = new Reducer(0, 0, 10);
+    }
+
+    @Test
+    public void testExperiment() {
+        MRConfigs.numNodes = 10;
+        MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.DEFAULT;
+        MRConfigs.displayLog = true;
+        MRConfigs.debugLog = true;
+
+        int numExperiments = 5;
+        double[] makespans = new double[numExperiments];
+
+        for (int n=0; n<numExperiments; n++) {
+            System.out.println("Experiment number: " + n);
+            Cluster cluster = new Cluster();
+            cluster.randomInit();
+
+//
+//            HDFS.put();
+//
+//            // see the blocks on each node
+//            for (int i=0; i<MRConfigs.numNodes; i++) {
+//                Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+//            }
+//
+//            MapReduce.runMR();
+//
+//            Log.debug("==========================================");
+//            System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+//            makespans[n] = Cluster.totalMakeSpan;
+        }
+
+        Functions.printArrayToFile("experiment1.txt", makespans);
     }
 }

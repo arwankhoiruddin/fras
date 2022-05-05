@@ -1,5 +1,7 @@
 package cluster;
 
+import common.Functions;
+import common.Log;
 import common.MRConfigs;
 import mapreduce.*;
 
@@ -9,7 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 public class Cluster {
-    public static Node[] nodes = new Node[MRConfigs.numNodes];
+    public static Switch[] switches;
+    public static Node[] nodes;
     public static User[] users = new User[MRConfigs.numUsers];
     public static int numBlocks;
     public static LinkedList liveNodes = new LinkedList();
@@ -26,7 +29,14 @@ public class Cluster {
 
     public static double totalMakeSpan = 0;
 
+    // Hahaha.. finally got the solution... spent a lot of time on this one
+    // So, the problem was because the MapReduce job run is based on the iteration of blockID
+    // Because on each experiment, the blockID was not reset to 0, then the run time is always incremented
     public Cluster() {
+        Cluster.blockID = 0;
+    }
+
+    public void init() {
         // init nodes
         for (int i=0; i < MRConfigs.numNodes; i++) {
             nodes[i] = new Node(i, MRConfigs.ramPerNodes, MRConfigs.vCpuPerNodes, new Disk(SataType.SATA3, MRConfigs.diskSpacePerNodes));
@@ -63,5 +73,64 @@ public class Cluster {
             }
             Time.times.add(node);
         }
+    }
+
+    public void randomInit() {
+
+        switches = new Switch[MRConfigs.numRacks + 1];
+        nodes = new Node[MRConfigs.numNodes];
+
+        for (int i=0; i<switches.length; i++) {
+            LinkType linkType = randLink();
+            switches[i] = new Switch(i, linkType);
+            if (i > 0) {
+                switches[i].connectParentSwitch(switches[0]);
+            }
+        }
+
+        for (int i=0; i<MRConfigs.numNodes; i++) {
+            int cpu = Functions.randStatGen(MRConfigs.meanCPU, MRConfigs.stdDevCPU);
+            int ram = Functions.randStatGen(MRConfigs.meanRAM, MRConfigs.stdDevRAM);
+            nodes[i] = new Node(i, cpu, ram, new Disk(SataType.SATA1, 100));
+            Log.debug("Node " + i + ": " + cpu + " " + ram);
+        }
+
+        int nodeNumber = 0;
+        int nodePerRack = MRConfigs.numNodes / MRConfigs.numRacks;
+
+        for (int i=0; i<MRConfigs.numRacks; i++) {
+            for (int j=0; j<nodePerRack; j++) {
+                nodes[nodeNumber].connectSwitch(switches[i+1]);
+                Log.debug("Node " + nodeNumber + " is connected to switch " + nodes[nodeNumber].getConnectedSwitch().getSwitchID());
+                nodeNumber++;
+            }
+        }
+
+        for (int i=0; i<MRConfigs.numUsers; i++) {
+            Cluster.users[i] = new User(i, Functions.randStatGen(MRConfigs.meanDataSize, MRConfigs.stdDevDataSize));
+            int[] taskLength = new int[4]; // mapper, shuffle, sort, reducer
+            for (int j=0; j<4; j++) {
+                taskLength[j] = Functions.randStatGen(MRConfigs.meanTaskLength, MRConfigs.stdDevTaskLength);
+            }
+            Cluster.taskLengths[i] = taskLength;
+            if (MRConfigs.debugLog) {
+                Log.debug("Task length for user number: " + i);
+                Functions.printArray(taskLength);
+            }
+        }
+
+    }
+
+    private LinkType randLink() {
+        LinkType result = LinkType.GIGABIT;
+        int link = Functions.randStatGen(MRConfigs.meanLink, MRConfigs.stdLink) % 4;
+
+        switch (link) {
+            case 0: result = LinkType.GIGABIT; break;
+            case 1: result = LinkType.FIVEGIGABIT; break;
+            case 2: result = LinkType.TENGIGABIT; break;
+            case 3: result = LinkType.TWENTYFIVEGIGABIT; break;
+        }
+        return result;
     }
 }

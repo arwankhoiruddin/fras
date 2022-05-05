@@ -111,10 +111,60 @@ public class Node {
         return length / this.cpu;
     }
 
+    public void tryRunJob() {
+        Log.debug("==================================");
+        Log.debug("Running task in node number " + this.nodeID + " with job size: " + jobs.size());
+
+        double totalRunTime = 0;
+        for (Job job : jobs) {
+            Log.debug("Job " + job.getJobID() + " is running");
+
+            // run mappers
+            for (int map=0; map < job.getMappers().size(); map++) {
+                Mapper mapper = job.getMappers().get(map);
+                Log.debug("Length of mapper of user " + mapper.getUserID() + ": " + mapper.getTaskLength());
+                double mapTime = runTask(mapper);
+                totalRunTime += mapTime;
+            }
+            // run shuffle
+            for (int j=0; j < job.getShuffles().size(); j++) {
+                Shuffle shuffle = job.getShuffles().get(j);
+                Log.debug("Length of shuffle of user " + shuffle.getUserID() + ": " + shuffle.getTaskLength());
+                double shuffleTime = runTask(shuffle);
+                totalRunTime += shuffleTime;
+            }
+
+            // run sort
+            for (int j=0; j < job.getSorts().size(); j++) {
+                Sort sort = job.getSorts().get(j);
+                Log.debug("Length of sort of user " + sort.getUserID() + ": " + sort.getTaskLength());
+                double sortTime = runTask(sort);
+                totalRunTime += sortTime;
+            }
+
+            // run reducer
+            for (int j=0; j < job.getReducers().size(); j++) {
+                Reducer reducer = job.getReducers().get(j);
+                Log.debug("Length of reducer of user " + reducer.getUserID() + ": " + reducer.getTaskLength());
+                double reduceTime = runTask(reducer);
+
+                totalRunTime += reduceTime;
+            }
+
+
+        }
+        Log.debug("Total time to run all jobs in the node: " + totalRunTime);
+
+        if (totalRunTime > Cluster.totalMakeSpan) {
+            Cluster.totalMakeSpan = totalRunTime;
+        }
+        printScheduled();
+    }
+
     public void runJob() {
 
-        System.out.println("==================================");
-        System.out.println("Running task in node number " + this.nodeID);
+        Log.debug("==================================");
+        Log.debug("Running task in node number " + this.nodeID + " with job size: " + jobs.size());
 
         // based on https://sci-hub.ru/https://ieeexplore.ieee.org/document/7019857
         // task runtime (T) can be formulated as
@@ -132,45 +182,63 @@ public class Node {
         double memLoads = 0;
         double totalRunTime = 0;
 
-        // run mapper todo: check if the user block is in the node
-
-        for (int i=0; i < this.getJobs().size(); i++) {
+//        for (int i=0; i < this.getJobs().size(); i++) {
             // one job can contain more than one mapper
-            Job job = this.getJobs().get(i);
+            Job job = this.getJobs().removeFirst();
+//            Job job = this.getJobs().get(i);
+
 
             for (int map=0; map < job.getMappers().size(); map++) {
                 Mapper mapper = job.getMappers().get(map);
-                totalRunTime += runTask(mapper);
+                Log.debug("Length of Mapper: " + mapper.getTaskLength());
+                double mapTime = runTask(mapper);
+                Log.debug("Size of Mappers: " + job.getMappers().size() + " Time to run mapper: " + mapTime);
+                totalRunTime += mapTime;
             }
             // run shuffle
             for (int j=0; j < job.getShuffles().size(); j++) {
                 Shuffle shuffle = job.getShuffles().get(j);
-                totalRunTime += runTask(shuffle);
+                Log.debug("Length of Shuffle: " + shuffle.getTaskLength());
+                double shuffleTime = runTask(shuffle);
+                Log.debug("Time to run shuffle: " + shuffleTime);
+                totalRunTime += shuffleTime;
             }
 
             // run sort
             for (int j=0; j < job.getSorts().size(); j++) {
                 Sort sort = job.getSorts().get(j);
-                totalRunTime += runTask(sort);
+                Log.debug("Length of Sort: " + sort.getTaskLength());
+                double sortTime = runTask(sort);
+                Log.debug("Time to run sort: " + sortTime);
+                totalRunTime += sortTime;
             }
 
             // run reducer
             for (int j=0; j < job.getReducers().size(); j++) {
                 Reducer reducer = job.getReducers().get(j);
-                totalRunTime += runTask(reducer);
+                Log.debug("Length of Reducer: " + reducer.getTaskLength());
+                double reduceTime = runTask(reducer);
+                Log.debug("Time to run reducer: " + reduceTime);
+
+                totalRunTime += reduceTime;
             }
 
-        }
+//        }
 
-        for (int i=0; i<this.scheduled.size(); i++) {
-            System.out.println(this.status.get(i) + " \t " + this.scheduled.get(i) + " \t " + this.taskType.get(i));
-        }
-        System.out.println("Total run time: " + totalRunTime);
+
+
+        Log.debug("Total run time: " + totalRunTime);
 
         if (totalRunTime > Cluster.totalMakeSpan)
             Cluster.totalMakeSpan = totalRunTime;
 
         this.memoryloads = memLoads;
+    }
+
+    public void printScheduled() {
+        for (int i=0; i<this.scheduled.size(); i++) {
+            Log.debug(this.status.get(i) + " \t " + this.scheduled.get(i) + " \t " + this.taskType.get(i));
+        }
     }
 
     public double runTask(MRTask mrTask) {
@@ -179,6 +247,8 @@ public class Node {
 
         double taskLength = mrTask.getTaskLength();
         double runTime = this.getProcessingSpeed(taskLength);
+        Log.debug("Run time of task of user " + mrTask.getUserID() + ": " + runTime);
+
         int hbCount = (int) runTime / MRConfigs.heartbeat;
 
         for (int j=0; j<hbCount; j++) {
@@ -218,6 +288,7 @@ public class Node {
             this.taskType.add(TaskType.IDLE);
         }
 
+        Log.debug("Total run time: " + totalRunTime);
         return totalRunTime;
     }
 

@@ -385,4 +385,11 @@ public class TestCluster {
         double speed2 = node2.getProcessingSpeed(job2.getMappers().getLast().getTaskLength());
         assert speed2 == 100;
     }
+
+    @Test
+    public void testNewCluster() {
+        MRConfigs.numNodes = 100;
+        Cluster cluster = new Cluster();
+        cluster.randomInit();
+    }
 }

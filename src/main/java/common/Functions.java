@@ -1,7 +1,6 @@
 package common;
 
-import cluster.Cluster;
-import cluster.Link;
+import cluster.*;
 import mapreduce.Job;
 import net.sourceforge.jFuzzyLogic.FIS;
 import net.sourceforge.jFuzzyLogic.rule.Variable;
@@ -16,6 +15,17 @@ import java.util.Random;
 import static common.MRConfigs.numNodes;
 
 public class Functions {
+
+    public static void clearLog() {
+        try {
+            PrintWriter writer = new PrintWriter("log.txt", "UTF-8");
+            writer.print("");
+            writer.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
 
     public static void printArray(int[] array) {
         for (int i=0; i<array.length; i++) {
@@ -56,12 +66,26 @@ public class Functions {
     }
 
     public static void printArray(String arrayName, float[][] array) {
-        System.out.println("Variable Name: " + arrayName);
+        Log.debug("Variable Name: " + arrayName);
         for (int i=0; i<array.length; i++) {
             for (int j=0; j<array[i].length; j++) {
                 System.out.print(array[i][j] + "\t");
             }
             System.out.println();
+        }
+    }
+
+    public static void printArrayToFile(String fileName, int[][] array) {
+        try (PrintWriter writer = new PrintWriter(fileName, "UTF-8")) {
+            StringBuilder sb = new StringBuilder();
+            for (int i=0; i<array.length; i++) {
+                for (int j=0; j<array[i].length; j++) {
+                    sb.append(array[i][j] + ",");
+                }
+                sb.append("\n");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -80,7 +104,7 @@ public class Functions {
     }
 
     public static void printList(LinkedList list) {
-        System.out.println("Size: " + list.size());
+        Log.debug("Size: " + list.size());
         for (int i=0; i<list.size(); i++) {
             System.out.print(list.get(i) + " ");
         }
@@ -107,6 +131,16 @@ public class Functions {
         }
     }
 
+    public static void printArrayToFile(String fileName, int[] array) {
+        try (PrintWriter writer = new PrintWriter(fileName, "UTF-8")) {
+            for (Object o : array) {
+                writer.println(o);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void printArrayToFile(String fileName, double[][] array) {
         try (PrintWriter writer = new PrintWriter(fileName, "UTF-8")) {
             for (int i=0; i<array.length; i++) {
@@ -117,6 +151,41 @@ public class Functions {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public static int randStatGen(int mean, int stdDev) {
+        int res = 0;
+        if (new Random().nextDouble() < 0.5) {
+            res = mean - (int) (new Random().nextDouble() * stdDev);
+        } else {
+            res = mean + (int) (new Random().nextDouble() * stdDev);
+        }
+        return res;
+    }
+
+    public static void buildCluster() {
+        // Create a new cluster
+        Switch mainSwitch = new Switch(0, LinkType.TENGIGABIT);
+        Switch switch1 = new Switch(1, LinkType.GIGABIT);
+        Switch switch2 = new Switch(2, LinkType.FIVEGIGABIT);
+
+        switch1.connectParentSwitch(mainSwitch);
+        switch2.connectParentSwitch(mainSwitch);
+
+        int[] cpus = {1, 4, 2, 6, 1, 12, 1, 4};
+        int[] rams = {4, 4, 16, 10, 4, 20, 2, 6};
+
+        MRConfigs.numNodes = 8;
+        Cluster.nodes = new Node[MRConfigs.numNodes];
+
+        for (int i=0; i<MRConfigs.numNodes; i++) {
+            Cluster.nodes[i] = new Node(0, cpus[i], rams[i], new Disk(SataType.SATA1, 60));
+
+            if (i < 4)
+                Cluster.nodes[i].connectSwitch(switch1);
+            else
+                Cluster.nodes[i].connectSwitch(switch2);
         }
     }
 
@@ -211,9 +280,9 @@ public class Functions {
     }
 
     public static int getNumberOfBlocks(double dataSize) {
-        System.out.println("Size of data: " + dataSize + " block size: " + MRConfigs.blockSize);
+        Log.debug("Size of data: " + dataSize + " block size: " + MRConfigs.blockSize);
         int numBlocks = (int) Math.ceil(dataSize*1024 / MRConfigs.blockSize);
-        System.out.println("Number of blocks: " + numBlocks);
+        Log.debug("Number of blocks: " + numBlocks);
         return numBlocks;
     }
 
@@ -249,12 +318,20 @@ public class Functions {
 
     public static int randGNNRoulette() {
         double[] vals = GNN();
+
         double total = 0;
 
         for (int i=0; i<vals.length; i++) {
+            // amplify the value
+            int power = 3;
+            for (int j=0; j<power; j++) {
+                vals[i] *= vals[i];
+            }
             total += vals[i];
 //            System.out.println(i + "\t" + vals[i]);
         }
+
+//        Functions.printArray(vals);
 
         double rand = new Random().nextDouble();
         double portion = 0;
@@ -321,10 +398,10 @@ public class Functions {
                 Variable priority = fis.getVariable("priority");
                 matrix[i][j] = priority.getValue();
 
-                System.out.println("Node " + i + " to Node " + j + ": " + priority.getValue());
-                System.out.println("CPU: " + Cluster.nodes[i].getCpu() + " RAM: " + Cluster.nodes[i].getRam());
-                System.out.println("Ping: " + Cluster.nodes[i].ping(Cluster.nodes[j]));
-                System.out.println("Neighbor CPU: " + Cluster.nodes[j].getCpu() + " RAM: " + Cluster.nodes[j].getRam());
+                Log.debug("Node " + i + " to Node " + j + ": " + priority.getValue());
+                Log.debug("CPU: " + Cluster.nodes[i].getCpu() + " RAM: " + Cluster.nodes[i].getRam());
+                Log.debug("Ping: " + Cluster.nodes[i].ping(Cluster.nodes[j]));
+                Log.debug("Neighbor CPU: " + Cluster.nodes[j].getCpu() + " RAM: " + Cluster.nodes[j].getRam());
 
                 nodeVal[i] += fis.getVariable("priority").getValue();
             }

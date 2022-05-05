@@ -1,6 +1,7 @@
 package com.fras;
 
 import cluster.*;
+import common.Log;
 import common.MRConfigs;
 import fifo.FifoScheduler;
 import fras.BlockPlacementStrategy;
@@ -108,7 +109,7 @@ public class TestHadoop {
     @Test
     public void testReverse() {
         for (int i=9; i>=0; i--) {
-            System.out.println(i);
+            Log.debug(i);
         }
     }
 
@@ -123,7 +124,7 @@ public class TestHadoop {
 
         for (int i=0; i<Cluster.nodes.length; i++) {
             int otherNodeInRack = HDFS.getRandomNodeSameRack(i);
-            System.out.println("current node: " + i + " other node in rack: " + otherNodeInRack);
+            Log.debug("current node: " + i + " other node in rack: " + otherNodeInRack);
             assert i != otherNodeInRack;
         }
     }
@@ -149,11 +150,11 @@ public class TestHadoop {
         }
 
         int nodeDifferentRack = HDFS.getRandomNodeDifferentRack(0);
-        System.out.println("Node in different rack: " + nodeDifferentRack);
+        Log.debug("Node in different rack: " + nodeDifferentRack);
         assert nodeDifferentRack >= 4;
 
         int otherNodeDifferentRack = HDFS.getRandomNodeSameRack(nodeDifferentRack);
-        System.out.println("Other node in different rack: " + otherNodeDifferentRack);
+        Log.debug("Other node in different rack: " + otherNodeDifferentRack);
         assert nodeDifferentRack >= 4;
     }
     
@@ -179,7 +180,7 @@ public class TestHadoop {
 
         for (int i=0; i<3; i++) {
             int otherNodeInRack = HDFS.getRandomNodeDifferentRack(i);
-            System.out.println("i: " + i + " other node: " + otherNodeInRack);
+            Log.debug("i: " + i + " other node: " + otherNodeInRack);
             assert otherNodeInRack != i;
         }
     }
@@ -237,13 +238,13 @@ public class TestHadoop {
 
         // see the blocks on each node
         for (int i=0; i<MRConfigs.numNodes; i++) {
-            System.out.println("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+            Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
         }
 
         MapReduce.runMR();
 
-        System.out.println("==========================================");
-        System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+        Log.debug("==========================================");
+        Log.debug("Total makespan: " + Cluster.totalMakeSpan);
 
         // check blocks
     }
