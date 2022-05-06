@@ -48,6 +48,10 @@ public class HDFS {
         }
     }
 
+    public static int getRandomNode() {
+        return Cluster.nodes[new Random().nextInt(Cluster.nodes.length - 1) + 1].getNodeID();
+    }
+
     public static int getRandomNodeSameRack(int nodeNumber) {
         int differentNode = 0;
 
@@ -94,9 +98,16 @@ public class HDFS {
         // https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsBlockPlacementPolicies.html
 
         int nodeNumber = 0;
+
+        switch (MRConfigs.blockPlacementStrategy) {
+            case DEFAULT -> nodeNumber = getRandomNodeSameRack(0);
+            case FRAS -> nodeNumber = Functions.randGNNRoulette();
+            case FAIR -> nodeNumber = getRandomNode();
+        }
+
         if (MRConfigs.blockPlacementStrategy == BlockPlacementStrategy.DEFAULT) {
             nodeNumber = getRandomNodeSameRack(0);
-        } else { // Fuzzy Resource Aware Block Placement
+        } else if (MRConfigs.blockPlacementStrategy == BlockPlacementStrategy.FRAS) { // Fuzzy Resource Aware Block Placement
             nodeNumber = Functions.randGNNRoulette();  // arwan todo: we can play around here
         }
         Log.debug("Original block number " + block.getBlockID() + " distributed to node " + nodeNumber);

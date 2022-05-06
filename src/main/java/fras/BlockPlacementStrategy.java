@@ -1,5 +1,5 @@
 package fras;
 
 public enum BlockPlacementStrategy {
-    DEFAULT, FRAS
+    DEFAULT, FRAS, FAIR;
 }

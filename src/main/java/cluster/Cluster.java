@@ -34,6 +34,27 @@ public class Cluster {
     // Because on each experiment, the blockID was not reset to 0, then the run time is always incremented
     public Cluster() {
         Cluster.blockID = 0;
+        nodes = new Node[MRConfigs.numNodes];
+        resetCluster();
+    }
+
+    public void resetCluster() {
+        blockUserID = new HashMap<>();
+        blockPlacement = new HashMap<>();
+        replications = new HashMap<>();
+        taskLengths = new int[MRConfigs.numUsers][4];
+        liveNodes = new LinkedList();
+
+        blockID = 0;
+        taskID = 0;
+        jobID = 0;
+
+        totalMakeSpan = 0;
+
+        for (int i=0; i<MRConfigs.numNodes; i++) {
+            if (nodes[i] != null)
+                nodes[i].resetJobs();
+        }
     }
 
     public void init() {
@@ -78,7 +99,6 @@ public class Cluster {
     public void randomInit() {
 
         switches = new Switch[MRConfigs.numRacks + 1];
-        nodes = new Node[MRConfigs.numNodes];
 
         for (int i=0; i<switches.length; i++) {
             LinkType linkType = randLink();

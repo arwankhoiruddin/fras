@@ -684,8 +684,13 @@ public class ExperimentalResults {
         MRConfigs.stdDevTaskLength = 2;
         MRConfigs.numUsers = 2;
 
-        int numExperiments = 10;
-        double[] makespans = new double[numExperiments];
+        MRConfigs.meanCPU = 12;
+        MRConfigs.stdDevCPU = 10;
+
+        int numExperiments = 100;
+
+        double[] makespanFRAS = new double[numExperiments];
+        double[] makespanDefault = new double[numExperiments];
 
         int expVariation = 2;
 
@@ -715,11 +720,155 @@ public class ExperimentalResults {
 
                 Log.debug("==========================================");
                 System.out.println("Total makespan: " + Cluster.totalMakeSpan);
-                makespans[n] = Cluster.totalMakeSpan;
+
+                switch (exp) {
+                    case 0:
+                        makespanFRAS[n] = Cluster.totalMakeSpan;
+                        break;
+                    case 1:
+                        makespanDefault[n] = Cluster.totalMakeSpan;
+                        break;
+                }
             }
 
         }
 
-        Functions.printArrayToFile("experiment1.txt", makespans);
+        Functions.printArrayToFile("makespanFRAS.txt", makespanFRAS);
+        Functions.printArrayToFile("makespanDefault.txt", makespanDefault);
+    }
+
+    @Test
+    public void experiment2() {
+        Functions.clearLog();
+
+        MRConfigs.numNodes = 10;
+        MRConfigs.debugLog = true;
+        MRConfigs.displayLog = true;
+
+        MRConfigs.meanTaskLength = 1000;
+        MRConfigs.stdDevTaskLength = 500;
+        MRConfigs.numUsers = 2;
+
+        MRConfigs.meanCPU = 12;
+
+        int numExperiments = 30;
+        int numVariations = 11;
+
+        double[][] makespanFRAS = new double[numExperiments][numVariations];
+        double[][] makespanDefault = new double[numExperiments][numVariations];
+        double[][] makespanFAIR = new double[numExperiments][numVariations];
+
+        int expVariation = 3;
+
+        for (int var = 0; var < numVariations; var++) {
+            MRConfigs.stdDevCPU = var;
+            System.out.println("Standard Deviation: " + var);
+
+            for (int n = 0; n < numExperiments; n++) {
+                System.out.println("Experiment number: " + n);
+                Cluster cluster = new Cluster();
+                cluster.randomInit();
+
+                for (int exp = 0; exp < expVariation; exp++) {
+                    // reset blockID
+                    cluster.resetCluster();
+
+                    switch (exp) {
+                        case 0:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FAIR;
+                            break;
+                        case 1:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.DEFAULT;
+                            break;
+                        case 2:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FRAS;
+                    }
+
+                    HDFS.put();
+
+                    // see the blocks on each node
+                    for (int i = 0; i < MRConfigs.numNodes; i++) {
+                        Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+                    }
+
+                    MapReduce.runMR();
+
+                    Log.debug("==========================================");
+                    System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+
+                    switch (exp) {
+                        case 0:
+                            makespanFAIR[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 1:
+                            makespanDefault[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 2:
+                            makespanFRAS[n][var] = Cluster.totalMakeSpan;
+                    }
+                }
+            }
+        }
+
+        Functions.printArrayToFile("makespanFRAS.txt", makespanFRAS);
+        Functions.printArrayToFile("makespanDefault.txt", makespanDefault);
+        Functions.printArrayToFile("makespanFAIR.txt", makespanFAIR);
+    }
+
+    @Test
+    public void experiment3() {
+        Functions.clearLog();
+
+        MRConfigs.numNodes = 10;
+        MRConfigs.debugLog = true;
+        MRConfigs.displayLog = true;
+
+        MRConfigs.meanTaskLength = 4;
+        MRConfigs.stdDevTaskLength = 2;
+        MRConfigs.numUsers = 2;
+
+        MRConfigs.meanCPU = 12;
+
+        int numExperiments = 30;
+        int numVariations = 10;
+
+        double[][] makespanFAIR = new double[numExperiments][numVariations];
+
+        int expVariation = 1;
+
+        for (int var = 0; var < numVariations; var++) {
+            MRConfigs.stdDevCPU = var;
+            System.out.println("Standard Deviation: " + var);
+
+            for (int n = 0; n < numExperiments; n++) {
+                MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FAIR;
+                Cluster.totalMakeSpan = 0;
+                System.out.println("Experiment number: " + n);
+                Cluster cluster = new Cluster();
+                cluster.randomInit();
+
+                for (int exp = 0; exp < expVariation; exp++) {
+                    // reset blockID
+                    Cluster.blockID = 0;
+
+
+                    HDFS.put();
+
+                    // see the blocks on each node
+                    for (int i = 0; i < MRConfigs.numNodes; i++) {
+                        Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+                    }
+
+                    MapReduce.runMR();
+
+                    Log.debug("==========================================");
+                    System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+
+                    makespanFAIR[n][var] = Cluster.totalMakeSpan;
+                }
+            }
+        }
+
+        Functions.printArrayToFile("makespanFAIR.txt", makespanFAIR);
     }
 }

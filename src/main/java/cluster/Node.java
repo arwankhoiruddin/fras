@@ -99,6 +99,10 @@ public class Node {
         return jobs;
     }
 
+    public void resetJobs() {
+        this.jobs = new LinkedList<>();
+    }
+
     public void addBlock(Block block) {
         this.disk.addBlock(block);
     }
@@ -111,10 +115,7 @@ public class Node {
         return length / this.cpu;
     }
 
-    public void tryRunJob() {
-        Log.debug("==================================");
-        Log.debug("Running task in node number " + this.nodeID + " with job size: " + jobs.size());
-
+    public double scheduleJob(LinkedList<Job> jobs) {
         double totalRunTime = 0;
         for (Job job : jobs) {
             Log.debug("Job " + job.getJobID() + " is running");
@@ -150,9 +151,16 @@ public class Node {
 
                 totalRunTime += reduceTime;
             }
-
-
         }
+        return totalRunTime;
+    }
+
+    public void runJob() {
+        Log.debug("==================================");
+        Log.debug("Running task in node number " + this.nodeID + " with job size: " + jobs.size());
+
+        double totalRunTime = scheduleJob(jobs);
+
         Log.debug("Total time to run all jobs in the node: " + totalRunTime);
 
         if (totalRunTime > Cluster.totalMakeSpan) {
@@ -161,7 +169,7 @@ public class Node {
         printScheduled();
     }
 
-    public void runJob() {
+    public void tryRunJob() {
 
         Log.debug("==================================");
         Log.debug("Running task in node number " + this.nodeID + " with job size: " + jobs.size());

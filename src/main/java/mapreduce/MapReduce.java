@@ -134,7 +134,7 @@ public class MapReduce {
                 Log.debug("Job number " + job.getJobID() + " belongs to user " + job.getUserID());
             }
 
-            Cluster.nodes[i].tryRunJob();
+            Cluster.nodes[i].runJob();
         }
 
 //        for (int i=0; i<Cluster.blockID; i++) {
