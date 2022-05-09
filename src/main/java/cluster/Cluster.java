@@ -5,10 +5,7 @@ import common.Log;
 import common.MRConfigs;
 import mapreduce.*;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Cluster {
     public static Switch[] switches;
@@ -42,7 +39,6 @@ public class Cluster {
         blockUserID = new HashMap<>();
         blockPlacement = new HashMap<>();
         replications = new HashMap<>();
-        taskLengths = new int[MRConfigs.numUsers][4];
         liveNodes = new LinkedList();
 
         blockID = 0;
@@ -96,21 +92,40 @@ public class Cluster {
         }
     }
 
+    public void simulateClusterProblem() {
+        for (int i=0; i<Cluster.nodes.length; i++) {
+            if (new Random().nextDouble() < 0.5)
+                Cluster.nodes[i].setReachable(false);
+            else
+                Cluster.nodes[i].setReachable(true);
+        }
+    }
+
     public void randomInit() {
 
         switches = new Switch[MRConfigs.numRacks + 1];
+
+        System.out.println("Number of switches: " + switches.length);
 
         for (int i=0; i<switches.length; i++) {
             LinkType linkType = randLink();
             switches[i] = new Switch(i, linkType);
             if (i > 0) {
+                Log.debug("Connecting switch number " + i + " to main switch");
                 switches[i].connectParentSwitch(switches[0]);
             }
         }
 
+        int cpu = 1;
+        int ram = 1;
+
         for (int i=0; i<MRConfigs.numNodes; i++) {
-            int cpu = Functions.randStatGen(MRConfigs.meanCPU, MRConfigs.stdDevCPU);
-            int ram = Functions.randStatGen(MRConfigs.meanRAM, MRConfigs.stdDevRAM);
+            if (MRConfigs.incrementConfig) {
+                cpu += MRConfigs.stdDevCPU;
+            } else {
+                cpu = Functions.randStatGen(MRConfigs.meanCPU, MRConfigs.stdDevCPU);
+                ram = Functions.randStatGen(MRConfigs.meanRAM, MRConfigs.stdDevRAM);
+            }
             nodes[i] = new Node(i, cpu, ram, new Disk(SataType.SATA1, 100));
             Log.debug("Node " + i + ": " + cpu + " " + ram);
         }
@@ -126,6 +141,19 @@ public class Cluster {
             }
         }
 
+        // check if all nodes has been connected
+        for (int node=nodeNumber; node < MRConfigs.numNodes; node++) {
+            if (nodes[node].getConnectedSwitch() == null) {
+                nodes[node].connectSwitch(switches[switches.length - 1]);
+                Log.debug("Node " + node + " is connected to switch " + nodes[node].getConnectedSwitch().getSwitchID());
+            }
+        }
+
+        generateTaskLength();
+
+    }
+
+    public void generateTaskLength() {
         for (int i=0; i<MRConfigs.numUsers; i++) {
             Cluster.users[i] = new User(i, Functions.randStatGen(MRConfigs.meanDataSize, MRConfigs.stdDevDataSize));
             int[] taskLength = new int[4]; // mapper, shuffle, sort, reducer
@@ -138,7 +166,6 @@ public class Cluster {
                 Functions.printArray(taskLength);
             }
         }
-
     }
 
     private LinkType randLink() {

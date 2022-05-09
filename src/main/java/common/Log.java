@@ -23,7 +23,7 @@ public class Log {
 //            System.out.println(disp);
             disp = disp + "\n";
             try {
-                Files.write(Paths.get("log.txt"), disp.getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
+                Files.write(Paths.get(MRConfigs.logPath), disp.getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
             } catch (Exception e) {
                 e.printStackTrace();
             }

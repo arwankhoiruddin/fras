@@ -7,6 +7,8 @@ import mapreduce.ReplicationStrategy;
 import yarn.Scheduler;
 
 public class MRConfigs {
+    public static String logPath = "C:\\Users\\arwan\\Documents\\log.txt";
+
     public static boolean displayLog = false;
     public static boolean debugLog = false;
     public static boolean randomData = false;
@@ -30,6 +32,7 @@ public class MRConfigs {
     public static Scheduler scheduler = new FRAS();
 
     // experiment configurations
+    public static boolean incrementConfig = false;
 
     // job length configurations
     public static int minTaskLength = 1;

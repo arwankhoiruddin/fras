@@ -18,7 +18,7 @@ public class Functions {
 
     public static void clearLog() {
         try {
-            PrintWriter writer = new PrintWriter("log.txt", "UTF-8");
+            PrintWriter writer = new PrintWriter(MRConfigs.logPath, "UTF-8");
             writer.print("");
             writer.close();
         } catch (Exception e) {

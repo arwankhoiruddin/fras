@@ -8,6 +8,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="mapredsim-fras" />
         <module name="mrsimfras" />
+        <module name="fras" />
       </profile>
     </annotationProcessing>
   </component>

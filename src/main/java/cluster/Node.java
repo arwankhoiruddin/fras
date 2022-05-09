@@ -1,12 +1,11 @@
 package cluster;
 
+import common.Functions;
 import common.Log;
 import common.MRConfigs;
 import mapreduce.*;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 public class Node {
     private int nodeID;
@@ -18,6 +17,8 @@ public class Node {
     private LinkedList data = new LinkedList();
     private boolean reachable = true;
     private Switch connectedSwitch;
+
+    public boolean addIdleTime = false;
 
     // to mark each task run and heartbeat
     public LinkedList<Double> scheduled = new LinkedList<>();
@@ -117,18 +118,19 @@ public class Node {
 
     public double scheduleJob(LinkedList<Job> jobs) {
         double totalRunTime = 0;
+
         for (Job job : jobs) {
             Log.debug("Job " + job.getJobID() + " is running");
 
             // run mappers
-            for (int map=0; map < job.getMappers().size(); map++) {
+            for (int map = 0; map < job.getMappers().size(); map++) {
                 Mapper mapper = job.getMappers().get(map);
                 Log.debug("Length of mapper of user " + mapper.getUserID() + ": " + mapper.getTaskLength());
                 double mapTime = runTask(mapper);
                 totalRunTime += mapTime;
             }
             // run shuffle
-            for (int j=0; j < job.getShuffles().size(); j++) {
+            for (int j = 0; j < job.getShuffles().size(); j++) {
                 Shuffle shuffle = job.getShuffles().get(j);
                 Log.debug("Length of shuffle of user " + shuffle.getUserID() + ": " + shuffle.getTaskLength());
                 double shuffleTime = runTask(shuffle);
@@ -136,7 +138,7 @@ public class Node {
             }
 
             // run sort
-            for (int j=0; j < job.getSorts().size(); j++) {
+            for (int j = 0; j < job.getSorts().size(); j++) {
                 Sort sort = job.getSorts().get(j);
                 Log.debug("Length of sort of user " + sort.getUserID() + ": " + sort.getTaskLength());
                 double sortTime = runTask(sort);
@@ -144,29 +146,62 @@ public class Node {
             }
 
             // run reducer
-            for (int j=0; j < job.getReducers().size(); j++) {
+            for (int j = 0; j < job.getReducers().size(); j++) {
                 Reducer reducer = job.getReducers().get(j);
                 Log.debug("Length of reducer of user " + reducer.getUserID() + ": " + reducer.getTaskLength());
                 double reduceTime = runTask(reducer);
 
                 totalRunTime += reduceTime;
             }
+
         }
-        return totalRunTime;
+
+        // RAM defines the parallelism
+        // For now, we just assume that each thread consumes 1 GB RAM
+        // Also assume that the parallelism cause the run time to be cut based on the memory
+
+        return (totalRunTime / this.ram);
     }
 
     public void runJob() {
-        Log.debug("==================================");
-        Log.debug("Running task in node number " + this.nodeID + " with job size: " + jobs.size());
+        if (this.reachable == false) {
+            Log.debug("Node " + this. nodeID + " is unreachable. Now trying to execute in different node");
 
-        double totalRunTime = scheduleJob(jobs);
+            // Get the original blocks in this node
+            for (int i=0; i<Cluster.blockID; i++) {
+                if (Cluster.blockPlacement.get(i) == this.nodeID) {
+                    List replications = Cluster.replications.get(i);
+                    Log.debug("Block ID in node: " + this.nodeID + " : " + i + " replicated in node " + Cluster.replications.get(i));
 
-        Log.debug("Total time to run all jobs in the node: " + totalRunTime);
+                    double[] vals = Functions.GNN();
 
-        if (totalRunTime > Cluster.totalMakeSpan) {
-            Cluster.totalMakeSpan = totalRunTime;
+                    double maxVal = 0;
+                    int idxMax = 0;
+                    for (int j=0; j<3; j++) {
+                        int nodeIdx = Cluster.replications.get(i).get(j);
+                        if (vals[nodeIdx] < maxVal) {
+                            maxVal = vals[nodeIdx];
+                            idxMax = nodeIdx;
+                        }
+                    }
+
+                    Cluster.nodes[idxMax].addIdleTime = true;
+                    Cluster.nodes[idxMax].scheduleJob(jobs);
+                }
+            }
+        } else {
+            Log.debug("==================================");
+            Log.debug("Running task in node number " + this.nodeID + " with job size: " + jobs.size());
+
+            double totalRunTime = scheduleJob(jobs);
+
+            Log.debug("Total time to run all jobs in the node: " + totalRunTime);
+
+            if (totalRunTime > Cluster.totalMakeSpan) {
+                Cluster.totalMakeSpan = totalRunTime;
+            }
+            printScheduled();
         }
-        printScheduled();
     }
 
     public void tryRunJob() {
@@ -191,45 +226,45 @@ public class Node {
         double totalRunTime = 0;
 
 //        for (int i=0; i < this.getJobs().size(); i++) {
-            // one job can contain more than one mapper
-            Job job = this.getJobs().removeFirst();
+        // one job can contain more than one mapper
+        Job job = this.getJobs().removeFirst();
 //            Job job = this.getJobs().get(i);
 
 
-            for (int map=0; map < job.getMappers().size(); map++) {
-                Mapper mapper = job.getMappers().get(map);
-                Log.debug("Length of Mapper: " + mapper.getTaskLength());
-                double mapTime = runTask(mapper);
-                Log.debug("Size of Mappers: " + job.getMappers().size() + " Time to run mapper: " + mapTime);
-                totalRunTime += mapTime;
-            }
-            // run shuffle
-            for (int j=0; j < job.getShuffles().size(); j++) {
-                Shuffle shuffle = job.getShuffles().get(j);
-                Log.debug("Length of Shuffle: " + shuffle.getTaskLength());
-                double shuffleTime = runTask(shuffle);
-                Log.debug("Time to run shuffle: " + shuffleTime);
-                totalRunTime += shuffleTime;
-            }
+        for (int map=0; map < job.getMappers().size(); map++) {
+            Mapper mapper = job.getMappers().get(map);
+            Log.debug("Length of Mapper: " + mapper.getTaskLength());
+            double mapTime = runTask(mapper);
+            Log.debug("Size of Mappers: " + job.getMappers().size() + " Time to run mapper: " + mapTime);
+            totalRunTime += mapTime;
+        }
+        // run shuffle
+        for (int j=0; j < job.getShuffles().size(); j++) {
+            Shuffle shuffle = job.getShuffles().get(j);
+            Log.debug("Length of Shuffle: " + shuffle.getTaskLength());
+            double shuffleTime = runTask(shuffle);
+            Log.debug("Time to run shuffle: " + shuffleTime);
+            totalRunTime += shuffleTime;
+        }
 
-            // run sort
-            for (int j=0; j < job.getSorts().size(); j++) {
-                Sort sort = job.getSorts().get(j);
-                Log.debug("Length of Sort: " + sort.getTaskLength());
-                double sortTime = runTask(sort);
-                Log.debug("Time to run sort: " + sortTime);
-                totalRunTime += sortTime;
-            }
+        // run sort
+        for (int j=0; j < job.getSorts().size(); j++) {
+            Sort sort = job.getSorts().get(j);
+            Log.debug("Length of Sort: " + sort.getTaskLength());
+            double sortTime = runTask(sort);
+            Log.debug("Time to run sort: " + sortTime);
+            totalRunTime += sortTime;
+        }
 
-            // run reducer
-            for (int j=0; j < job.getReducers().size(); j++) {
-                Reducer reducer = job.getReducers().get(j);
-                Log.debug("Length of Reducer: " + reducer.getTaskLength());
-                double reduceTime = runTask(reducer);
-                Log.debug("Time to run reducer: " + reduceTime);
+        // run reducer
+        for (int j=0; j < job.getReducers().size(); j++) {
+            Reducer reducer = job.getReducers().get(j);
+            Log.debug("Length of Reducer: " + reducer.getTaskLength());
+            double reduceTime = runTask(reducer);
+            Log.debug("Time to run reducer: " + reduceTime);
 
-                totalRunTime += reduceTime;
-            }
+            totalRunTime += reduceTime;
+        }
 
 //        }
 
@@ -254,10 +289,21 @@ public class Node {
         double totalRunTime = 0;
 
         double taskLength = mrTask.getTaskLength();
+        Log.debug("Task length: " + taskLength);
         double runTime = this.getProcessingSpeed(taskLength);
         Log.debug("Run time of task of user " + mrTask.getUserID() + ": " + runTime);
 
         int hbCount = (int) runTime / MRConfigs.heartbeat;
+
+        if (this.addIdleTime) {
+            // add 3 heartbeat of idle time
+            for (int i=0; i<3; i++) {
+                totalRunTime += MRConfigs.heartbeat;
+                this.scheduled.add((double) MRConfigs.heartbeat);
+                this.status.add(0.);
+                this.taskType.add(TaskType.IDLE);
+            }
+        }
 
         for (int j=0; j<hbCount; j++) {
             this.scheduled.add((double) MRConfigs.heartbeat);
@@ -268,7 +314,7 @@ public class Node {
                 this.taskType.add(TaskType.SHUFFLE);
             else if (mrTask instanceof Sort)
                 this.taskType.add(TaskType.SORT);
-            else
+            else if (mrTask instanceof Reducer)
                 this.taskType.add(TaskType.REDUCER);
 
             runTime -= MRConfigs.heartbeat;
