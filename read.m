@@ -32,8 +32,8 @@ figure
 xlabel('CPU standard deviation');
 ylabel('Make Span');
 hold on
-errorbar(x, rerata, standar, 'r');
-errorbar(x, reratafras, standarfras, 'g');
-errorbar(x, reratafair, standarfair, 'b');
+errorbar(x, rerata, standar, 'r', 'LineWidth',1);
+errorbar(x, reratafras, standarfras, 'g','LineWidth',1);
+errorbar(x, reratafair, standarfair, 'b', 'LineWidth',1);
 legend('FIFO', 'FRAS', 'FAIR');
 hold off

@@ -116,18 +116,28 @@ public class Cluster {
             }
         }
 
-        int cpu = 1;
-        int ram = 1;
+        if (MRConfigs.isHomogeneous) {
+            int cpu = Functions.randStatGen(MRConfigs.meanCPU, MRConfigs.stdDevCPU);
+            int ram = Functions.randStatGen(MRConfigs.meanRAM, MRConfigs.stdDevRAM);
 
-        for (int i=0; i<MRConfigs.numNodes; i++) {
-            if (MRConfigs.incrementConfig) {
-                cpu += MRConfigs.stdDevCPU;
-            } else {
-                cpu = Functions.randStatGen(MRConfigs.meanCPU, MRConfigs.stdDevCPU);
-                ram = Functions.randStatGen(MRConfigs.meanRAM, MRConfigs.stdDevRAM);
+            for (int i=0; i<MRConfigs.numNodes; i++) {
+                nodes[i] = new Node(i, cpu, ram, new Disk(SataType.SATA1, 100));
+                Log.debug("Node " + i + ": " + cpu + " " + ram);
             }
-            nodes[i] = new Node(i, cpu, ram, new Disk(SataType.SATA1, 100));
-            Log.debug("Node " + i + ": " + cpu + " " + ram);
+        } else { // heterogeneous
+            int cpu = 1;
+            int ram = 1;
+
+            for (int i=0; i<MRConfigs.numNodes; i++) {
+                if (MRConfigs.incrementConfig) {
+                    cpu += MRConfigs.stdDevCPU;
+                } else {
+                    cpu = Functions.randStatGen(MRConfigs.meanCPU, MRConfigs.stdDevCPU);
+                    ram = Functions.randStatGen(MRConfigs.meanRAM, MRConfigs.stdDevRAM);
+                }
+                nodes[i] = new Node(i, cpu, ram, new Disk(SataType.SATA1, 100));
+                Log.debug("Node " + i + ": " + cpu + " " + ram);
+            }
         }
 
         int nodeNumber = 0;
