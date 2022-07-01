@@ -26,10 +26,10 @@ for i=1:uk
     standarfair = [standarfair std(fair(:, i))];
 end
 
-x = 0:uk-1;
+x = 1:uk;
 
 figure
-xlabel('CPU standard deviation');
+xlabel('CPU Standard Deviation');
 ylabel('Make Span');
 hold on
 errorbar(x, rerata, standar, 'r', 'LineWidth',1);

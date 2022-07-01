@@ -2,6 +2,7 @@ package common;
 
 import cluster.*;
 import mapreduce.Job;
+import mapreduce.MapReduce;
 import net.sourceforge.jFuzzyLogic.FIS;
 import net.sourceforge.jFuzzyLogic.rule.Variable;
 
@@ -154,9 +155,28 @@ public class Functions {
         }
     }
 
+    public static double generateRandom() {
+        int n = 10;
+        double[] rand = new double[n];
+        for (int i=0; i<n; i++) {
+            rand[i] = new Random().nextDouble() * new Random().nextDouble();
+        }
+        return rand[new Random().nextInt(n)];
+    }
+
+    public static int randStatGen(int mean, int stdDev, double probability) {
+        int res = 0;
+        if (probability < 0.5) {
+            res = mean - (int) (new Random().nextDouble() * stdDev);
+        } else {
+            res = mean + (int) (new Random().nextDouble() * stdDev);
+        }
+        return res;
+    }
+
     public static int randStatGen(int mean, int stdDev) {
         int res = 0;
-        if (new Random().nextDouble() < 0.5) {
+        if (Functions.generateRandom() < 0.5) {
             res = mean - (int) (new Random().nextDouble() * stdDev);
         } else {
             res = mean + (int) (new Random().nextDouble() * stdDev);
@@ -317,8 +337,8 @@ public class Functions {
     }
 
     public static int randGNNRoulette() {
-        double[] vals = GNN();
-
+//        double[] vals = GNN();
+        double[] vals = GNNWithWeight();
         double total = 0;
 
         for (int i=0; i<vals.length; i++) {
@@ -328,10 +348,7 @@ public class Functions {
                 vals[i] *= vals[i];
             }
             total += vals[i];
-//            System.out.println(i + "\t" + vals[i]);
         }
-
-//        Functions.printArray(vals);
 
         double rand = new Random().nextDouble();
         double portion = 0;
@@ -372,6 +389,72 @@ public class Functions {
             }
         }
         return nodeVal;
+    }
+
+    public static double[] GNNWithWeight() {
+        // find the Graph Values
+        double[] nodeVal = new double[MRConfigs.numNodes];
+        double[][] matrix = new double[MRConfigs.numNodes][MRConfigs.numNodes];
+
+        for (int i=0; i<MRConfigs.numNodes; i++) {
+            nodeVal[i] = 0;
+            for (int j=0; j<MRConfigs.numNodes; j++) {
+                if (Cluster.nodes[j].isReachable()) {
+                    double ownCPU = normCPU(Cluster.nodes[i].getCpu());
+                    double ownRAM = normRAM(Cluster.nodes[i].getRam());
+                    double neighCPU = normCPU(Cluster.nodes[j].getCpu());
+                    double neighRAM = normRAM(Cluster.nodes[j].getRam());
+                    double nPing = normPing(Cluster.nodes[i].ping(Cluster.nodes[j]));
+
+                    nodeVal[i] += (ownCPU * MRConfigs.ownCPUWeight)
+                            + (ownRAM * MRConfigs.ownRAMWeight)
+                            + (neighCPU * MRConfigs.neighCPUWeight)
+                            + (neighRAM * MRConfigs.neighRAMWeight)
+                            + (nPing * MRConfigs.pingWeight);
+                }
+
+            }
+            // if the node is unreachable, the node preference is zero
+            if (!Cluster.nodes[i].isReachable()) nodeVal[i] = 0;
+        }
+        return nodeVal;
+    }
+
+    private static double normCPU(double CPU) {
+        return CPU / MRConfigs.maxCPU;
+    }
+
+    private static double normRAM(double RAM) {
+        return RAM / MRConfigs.maxRAM;
+    }
+
+    private static double normPing(double ping) {
+        return ping / MRConfigs.maxPing;
+    }
+
+    public static double[][] GNNMatrixWithWeight() {
+        // find the Graph Values
+        double[] nodeVal = new double[MRConfigs.numNodes];
+        double[][] matrix = new double[MRConfigs.numNodes][MRConfigs.numNodes];
+
+        for (int i=0; i<MRConfigs.numNodes; i++) {
+            nodeVal[i] = 0;
+            for (int j=0; j<MRConfigs.numNodes; j++) {
+                double ownCPU = normCPU(Cluster.nodes[i].getCpu());
+                double ownRAM = normRAM(Cluster.nodes[i].getRam());
+                double neighCPU = normCPU(Cluster.nodes[j].getCpu());
+                double neighRAM = normRAM(Cluster.nodes[j].getRam());
+                double nPing = normPing(Cluster.nodes[i].ping(Cluster.nodes[j]));
+
+                matrix[i][j] = (ownCPU * MRConfigs.ownCPUWeight)
+                        + (ownRAM * MRConfigs.ownRAMWeight)
+                        + (neighCPU * MRConfigs.neighCPUWeight)
+                        + (neighRAM * MRConfigs.neighRAMWeight)
+                        + (nPing * MRConfigs.pingWeight);
+
+            }
+        }
+        return matrix;
     }
 
     public static double[][] GNNMatrix() {

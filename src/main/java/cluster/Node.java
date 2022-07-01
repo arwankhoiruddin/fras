@@ -43,6 +43,10 @@ public class Node {
     }
 
     public void setReachable(boolean reachable) {
+        if (!reachable) {
+            this.cpu = 0;
+            this.ram = 0;
+        }
         this.reachable = reachable;
     }
 
@@ -173,7 +177,7 @@ public class Node {
                     List replications = Cluster.replications.get(i);
                     Log.debug("Block ID in node: " + this.nodeID + " : " + i + " replicated in node " + Cluster.replications.get(i));
 
-                    double[] vals = Functions.GNN();
+                    double[] vals = Functions.GNNWithWeight();
 
                     double maxVal = 0;
                     int idxMax = 0;
@@ -348,15 +352,19 @@ public class Node {
 
     public double ping(Node node) {
         double timeToTransfer = 0;
-        int dataSize = 1;
+        if (node.isReachable()) {
+            int dataSize = 100;
 
-        // find the destination node
-        if (this.connectedSwitch.nodes.contains(node)) {
-            timeToTransfer = 2 * dataSize / this.connectedSwitch.getLinkSpeed();
+            // find the destination node
+            if (this.connectedSwitch.nodes.contains(node)) {
+                timeToTransfer = 2 * dataSize / this.connectedSwitch.getLinkSpeed();
+            } else {
+                timeToTransfer = (dataSize / this.connectedSwitch.getLinkSpeed()) +
+                        (2 * (dataSize / this.connectedSwitch.parentSwitch.getLinkSpeed())) +
+                        (dataSize / node.connectedSwitch.getLinkSpeed());
+            }
         } else {
-            timeToTransfer = (dataSize / this.connectedSwitch.getLinkSpeed()) +
-                    ( 2 * (dataSize / this.connectedSwitch.parentSwitch.getLinkSpeed())) +
-                    (dataSize / node.connectedSwitch.getLinkSpeed());
+            timeToTransfer = 1000000;
         }
         return timeToTransfer;
     }

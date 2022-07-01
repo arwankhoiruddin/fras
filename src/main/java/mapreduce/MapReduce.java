@@ -121,20 +121,22 @@ public class MapReduce {
 
         // execute on each node
         for (int i=0; i<MRConfigs.numNodes; i++) {
-            int numJobs = Cluster.nodes[i].getJobs().size();
-            int numBlocks = Cluster.nodes[i].getDisk().getBlocks().size();
+            if (Cluster.nodes[i].isReachable()) {
+                int numJobs = Cluster.nodes[i].getJobs().size();
+                int numBlocks = Cluster.nodes[i].getDisk().getBlocks().size();
 
-            Log.debug("Node number: " + i + " has " + numJobs + " jobs and " + numBlocks + " data");
+                Log.debug("Node number: " + i + " has " + numJobs + " jobs and " + numBlocks + " data");
 
-            LinkedList jobs = Cluster.nodes[i].getJobs();
-            LinkedList blocks = Cluster.nodes[i].getDisk().getBlocks();
+                LinkedList jobs = Cluster.nodes[i].getJobs();
+                LinkedList blocks = Cluster.nodes[i].getDisk().getBlocks();
 
-            for (int j=0; j<numJobs; j++) {
-                Job job = (Job) jobs.get(j);
-                Log.debug("Job number " + job.getJobID() + " belongs to user " + job.getUserID());
+                for (int j = 0; j < numJobs; j++) {
+                    Job job = (Job) jobs.get(j);
+                    Log.debug("Job number " + job.getJobID() + " belongs to user " + job.getUserID());
+                }
+
+                Cluster.nodes[i].runJob();
             }
-
-            Cluster.nodes[i].runJob();
         }
 
 //        for (int i=0; i<Cluster.blockID; i++) {

@@ -64,6 +64,42 @@ public class TestFunctions {
     }
 
     @Test
+    public void testGNNWeightMatrix() {
+        Switch mainSwitch = new Switch(0, LinkType.TENGIGABIT);
+        Switch switch1 = new Switch(1, LinkType.GIGABIT);
+        Switch switch2 = new Switch(2, LinkType.FIVEGIGABIT);
+
+        switch1.connectParentSwitch(mainSwitch);
+        switch2.connectParentSwitch(mainSwitch);
+
+        MRConfigs.numNodes = 8;
+        Cluster.nodes = new Node[MRConfigs.numNodes];
+
+        int[] cpus = {1, 4, 2, 6, 1, 12, 1, 4};
+        int[] rams = {4, 4, 16, 10, 4, 20, 2, 6};
+
+        for (int i=0; i<MRConfigs.numNodes; i++) {
+            Cluster.nodes[i] = new Node(0, cpus[i], rams[i], new Disk(SataType.SATA1, 60));
+
+            if (i < 4)
+                Cluster.nodes[i].connectSwitch(switch1);
+            else
+                Cluster.nodes[i].connectSwitch(switch2);
+        }
+
+        double[][] matrix = Functions.GNNMatrixWithWeight();
+
+        for (int i=0; i<matrix.length; i++) {
+            for (int j=0; j<matrix[i].length; j++) {
+                // amplify
+//                System.out.println("\nCPU: " + cpus[i] + " RAM: " + rams[i] + " nCPU: " + cpus[j] + " nRAM: " + rams[j]);
+                System.out.print(matrix[i][j] + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    @Test
     public void testGNNMatrix() {
         Switch mainSwitch = new Switch(0, LinkType.TENGIGABIT);
         Switch switch1 = new Switch(1, LinkType.GIGABIT);
@@ -91,6 +127,9 @@ public class TestFunctions {
 
         for (int i=0; i<matrix.length; i++) {
             for (int j=0; j<matrix[i].length; j++) {
+                // amplify
+                matrix[i][j] = matrix[i][j] * matrix[i][j];
+                System.out.println("\nCPU: " + cpus[i] + " RAM: " + rams[i] + " nCPU: " + cpus[j] + " nRAM: " + rams[j]);
                 System.out.print(matrix[i][j] + " ");
             }
             System.out.println();
@@ -574,5 +613,23 @@ public class TestFunctions {
         }
 
         Functions.printArrayToFile("experiment1.txt", makespans);
+    }
+
+    @Test
+    public void testRunJobClusterProblem() {
+        MRConfigs.numUsers = 1;
+        MRConfigs.isHomogeneous = false;
+        Cluster cluster = new Cluster();
+        cluster.randomInit();
+        cluster.simulateClusterProblem();
+        double[] weight = Functions.GNNWithWeight();
+        Functions.printArray(weight);
+    }
+
+    @Test
+    public void testRandom() {
+        for (int i=0; i<15; i++) {
+            System.out.println(Functions.generateRandom());
+        }
     }
 }

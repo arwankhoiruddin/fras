@@ -58,6 +58,7 @@ public class Cluster {
         for (int i=0; i < MRConfigs.numNodes; i++) {
             nodes[i] = new Node(i, MRConfigs.ramPerNodes, MRConfigs.vCpuPerNodes, new Disk(SataType.SATA3, MRConfigs.diskSpacePerNodes));
         }
+        liveNodes = new LinkedList();
 
         // init links --> Hadoop assumes that the topology used is tree topology
         // so we will divide the nodes into two racks
@@ -93,11 +94,17 @@ public class Cluster {
     }
 
     public void simulateClusterProblem() {
-        for (int i=0; i<Cluster.nodes.length; i++) {
-            if (new Random().nextDouble() < 0.5)
+        // node 0 is master node, don't let it problematic
+        System.out.println("Node 0 is reachable with CPU " + Cluster.nodes[0].getCpu() + " and RAM: " + Cluster.nodes[0].getRam());
+        for (int i=1; i<Cluster.nodes.length; i++) {
+            if (new Random().nextDouble() < MRConfigs.nodeProblemProbability) {
                 Cluster.nodes[i].setReachable(false);
-            else
+                System.out.println("Node " + i + " is unreachable with CPU: " + Cluster.nodes[i].getCpu() + " and RAM: " + Cluster.nodes[i].getRam());
+            } else {
                 Cluster.nodes[i].setReachable(true);
+                System.out.println("Node " + i + " is reachable with CPU: " + Cluster.nodes[i].getCpu() + " and RAM: " + Cluster.nodes[i].getRam());
+                liveNodes.add(i);
+            }
         }
     }
 
@@ -128,12 +135,18 @@ public class Cluster {
             int cpu = 1;
             int ram = 1;
 
+            double prob[] = new double[MRConfigs.numNodes];
+
+            for (int i=0; i<MRConfigs.numNodes; i++) {
+                prob[i] = Functions.generateRandom();
+            }
+
             for (int i=0; i<MRConfigs.numNodes; i++) {
                 if (MRConfigs.incrementConfig) {
                     cpu += MRConfigs.stdDevCPU;
                 } else {
-                    cpu = Functions.randStatGen(MRConfigs.meanCPU, MRConfigs.stdDevCPU);
-                    ram = Functions.randStatGen(MRConfigs.meanRAM, MRConfigs.stdDevRAM);
+                    cpu = Functions.randStatGen(MRConfigs.meanCPU, MRConfigs.stdDevCPU, prob[i]);
+                    ram = Functions.randStatGen(MRConfigs.meanRAM, MRConfigs.stdDevRAM, prob[i]);
                 }
                 nodes[i] = new Node(i, cpu, ram, new Disk(SataType.SATA1, 100));
                 Log.debug("Node " + i + ": " + cpu + " " + ram);
@@ -164,6 +177,8 @@ public class Cluster {
     }
 
     public void generateTaskLength() {
+        System.out.println("Number of users: " + MRConfigs.numUsers);
+
         for (int i=0; i<MRConfigs.numUsers; i++) {
             Cluster.users[i] = new User(i, Functions.randStatGen(MRConfigs.meanDataSize, MRConfigs.stdDevDataSize));
             int[] taskLength = new int[4]; // mapper, shuffle, sort, reducer
@@ -172,7 +187,7 @@ public class Cluster {
             }
             Cluster.taskLengths[i] = taskLength;
             if (MRConfigs.debugLog) {
-                Log.debug("Task length for user number: " + i);
+                System.out.println("Task length for user number: " + i);
                 Functions.printArray(taskLength);
             }
         }

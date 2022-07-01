@@ -903,10 +903,8 @@ public class ExperimentalResults {
 
         for (int var = 0; var < numVariations; var++) {
             MRConfigs.numRacks += var;
-            System.out.println("Number of Racks: " + MRConfigs.numRacks);
 
             for (int n = 0; n < numExperiments; n++) {
-                System.out.println("Experiment number: " + n);
                 Cluster cluster = new Cluster();
                 cluster.randomInit();
 
@@ -935,7 +933,7 @@ public class ExperimentalResults {
                     MapReduce.runMR();
 
                     Log.debug("==========================================");
-                    System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+                    System.out.println("Experiment number " + n + " variation number " + var + " Number of racks: " + MRConfigs.numRacks + " Total makespan: " + Cluster.totalMakeSpan);
 
                     switch (exp) {
                         case 0:
@@ -1040,25 +1038,27 @@ public class ExperimentalResults {
     }
 
     @Test
-    public void experimentHeterogeneousIncreasingCPUVariation() {
+    public void experimentHomogeneousDifferentNodeNumbersSimulateClusterProblem() {
         // with simulated cluster problem
         // experiment with different standar deviations of CPU
         Functions.clearLog();
 
-        MRConfigs.numNodes = 10;
+        int numVariations = 10;
+        int numExperiments = 30;
+
+        MRConfigs.numNodes = 8;
+        MRConfigs.numRacks = 4;
+
         MRConfigs.debugLog = true;
         MRConfigs.displayLog = true;
 
-        MRConfigs.meanTaskLength = 40;
-        MRConfigs.stdDevTaskLength = 10;
+        MRConfigs.meanTaskLength = 400;
+        MRConfigs.stdDevTaskLength = 100;
         MRConfigs.numUsers = 2;
 
         MRConfigs.meanCPU = 12;
-        MRConfigs.incrementConfig = true;
-        MRConfigs.isHomogeneous = false;
-
-        int numExperiments = 30;
-        int numVariations = 11;
+        MRConfigs.stdDevCPU = 11;
+        MRConfigs.isHomogeneous = true;
 
         double[][] makespanFRAS = new double[numExperiments][numVariations];
         double[][] makespanDefault = new double[numExperiments][numVariations];
@@ -1067,11 +1067,10 @@ public class ExperimentalResults {
         int expVariation = 3;
 
         for (int var = 0; var < numVariations; var++) {
-            MRConfigs.stdDevCPU = var;
-            System.out.println("Standard Deviation: " + var);
+            MRConfigs.numNodes = 10*(var+1);
+            System.out.println("Number of Nodes: " + MRConfigs.numNodes);
 
             for (int n = 0; n < numExperiments; n++) {
-                System.out.println("Experiment number: " + n);
                 Cluster cluster = new Cluster();
                 cluster.randomInit();
                 cluster.simulateClusterProblem();
@@ -1101,7 +1100,7 @@ public class ExperimentalResults {
                     MapReduce.runMR();
 
                     Log.debug("==========================================");
-                    System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+                    System.out.println("Experiment number " + n + " variation number " + var + " Node number: " + MRConfigs.numNodes + " Total makespan: " + Cluster.totalMakeSpan);
 
                     switch (exp) {
                         case 0:
@@ -1236,7 +1235,7 @@ public class ExperimentalResults {
         int expVariation = 3;
 
         for (int var = 0; var < numVariations; var++) {
-            MRConfigs.numNodes *= (var+1);
+            MRConfigs.numNodes = 10*(var+1);
             System.out.println("Number of Nodes: " + MRConfigs.numNodes);
 
             for (int n = 0; n < numExperiments; n++) {
@@ -1269,7 +1268,7 @@ public class ExperimentalResults {
                     MapReduce.runMR();
 
                     Log.debug("==========================================");
-                    System.out.println("Total makespan: " + Cluster.totalMakeSpan);
+                    System.out.println("Experiment number " + n + " variation number " + var + " Node number: " + MRConfigs.numNodes + " Total makespan: " + Cluster.totalMakeSpan);
 
                     switch (exp) {
                         case 0:
@@ -1280,6 +1279,1069 @@ public class ExperimentalResults {
                             break;
                         case 2:
                             makespanFRAS[n][var] = Cluster.totalMakeSpan;
+                    }
+                }
+            }
+        }
+
+        Functions.printArrayToFile("makespanFRAS.txt", makespanFRAS);
+        Functions.printArrayToFile("makespanDefault.txt", makespanDefault);
+        Functions.printArrayToFile("makespanFAIR.txt", makespanFAIR);
+    }
+
+    @Test
+    public void experimentHeterogeneousDifferentNodeNumbersSimulateClusterProblem() {
+        // with simulated cluster problem
+        // experiment with different standar deviations of CPU
+        Functions.clearLog();
+
+        int numVariations = 8;
+        int numExperiments = 5;
+
+        MRConfigs.numNodes = 8;
+        MRConfigs.numRacks = 4;
+
+        MRConfigs.debugLog = true;
+        MRConfigs.displayLog = true;
+
+        MRConfigs.meanTaskLength = 400;
+        MRConfigs.stdDevTaskLength = 100;
+        MRConfigs.numUsers = 2;
+
+        MRConfigs.meanCPU = 12;
+        MRConfigs.stdDevCPU = 11;
+        MRConfigs.isHomogeneous = false;
+
+        double[][] makespanFRAS = new double[numExperiments][numVariations];
+        double[][] makespanDefault = new double[numExperiments][numVariations];
+        double[][] makespanFAIR = new double[numExperiments][numVariations];
+
+        int expVariation = 3;
+
+        for (int var = 0; var < numVariations; var++) {
+            MRConfigs.numNodes = 10*(var+1);
+            System.out.println("Number of Nodes: " + MRConfigs.numNodes);
+
+            for (int n = 0; n < numExperiments; n++) {
+                System.out.println("Experiment number: " + n);
+                Cluster cluster = new Cluster();
+                cluster.randomInit();
+                cluster.simulateClusterProblem();
+
+                for (int exp = 0; exp < expVariation; exp++) {
+                    // reset blockID
+                    cluster.resetCluster();
+
+                    switch (exp) {
+                        case 0:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FAIR;
+                            break;
+                        case 1:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.DEFAULT;
+                            break;
+                        case 2:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FRAS;
+                    }
+
+                    HDFS.put();
+
+                    // see the blocks on each node
+                    for (int i = 0; i < MRConfigs.numNodes; i++) {
+                        Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+                    }
+
+                    MapReduce.runMR();
+
+                    Log.debug("==========================================");
+                    System.out.println("Experiment number " + n + " variation number " + var + " Node number: " + MRConfigs.numNodes + " Total makespan: " + Cluster.totalMakeSpan);
+
+                    switch (exp) {
+                        case 0:
+                            makespanFAIR[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 1:
+                            makespanDefault[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 2:
+                            makespanFRAS[n][var] = Cluster.totalMakeSpan;
+                    }
+                }
+            }
+        }
+
+        Functions.printArrayToFile("makespanFRAS.txt", makespanFRAS);
+        Functions.printArrayToFile("makespanDefault.txt", makespanDefault);
+        Functions.printArrayToFile("makespanFAIR.txt", makespanFAIR);
+    }
+
+    @Test
+    public void experimentIncreaseHeterogeneity() {
+        // with simulated cluster problem
+        // experiment with different standar deviations of CPU
+        // from homogeneous to very heterogeneous
+        Functions.clearLog();
+
+        MRConfigs.numNodes = 10;
+        MRConfigs.debugLog = true;
+        MRConfigs.displayLog = true;
+
+        MRConfigs.meanTaskLength = 100;
+        MRConfigs.stdDevTaskLength = 30;
+        MRConfigs.numUsers = 2;
+
+        MRConfigs.meanCPU = 12;
+        MRConfigs.incrementConfig = true;
+        MRConfigs.isHomogeneous = false;
+
+        int numExperiments = 30;
+        int numVariations = 11;
+
+        double[][] makespanFRAS = new double[numExperiments][numVariations];
+        double[][] makespanDefault = new double[numExperiments][numVariations];
+        double[][] makespanFAIR = new double[numExperiments][numVariations];
+
+        int expVariation = 3;
+
+        for (int var = 0; var < numVariations; var++) {
+            MRConfigs.stdDevCPU = var;
+
+            for (int n = 0; n < numExperiments; n++) {
+                Cluster cluster = new Cluster();
+                cluster.randomInit();
+
+                for (int exp = 0; exp < expVariation; exp++) {
+                    // reset blockID
+                    cluster.resetCluster();
+
+                    switch (exp) {
+                        case 0:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FAIR;
+                            break;
+                        case 1:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.DEFAULT;
+                            break;
+                        case 2:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FRAS;
+                    }
+
+                    HDFS.put();
+
+                    // see the blocks on each node
+                    for (int i = 0; i < MRConfigs.numNodes; i++) {
+                        Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+                    }
+
+                    MapReduce.runMR();
+
+                    Log.debug("==========================================");
+                    System.out.println("Experiment number " + n + " variation number " + var + " Node number: "
+                            + MRConfigs.numNodes + "Standard Deviation: " + MRConfigs.stdDevCPU
+                            + " Total makespan: " + Cluster.totalMakeSpan);
+
+                    switch (exp) {
+                        case 0:
+                            makespanFAIR[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 1:
+                            makespanDefault[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 2:
+                            makespanFRAS[n][var] = Cluster.totalMakeSpan;
+                    }
+                }
+            }
+        }
+
+        Functions.printArrayToFile("makespanFRAS.txt", makespanFRAS);
+        Functions.printArrayToFile("makespanDefault.txt", makespanDefault);
+        Functions.printArrayToFile("makespanFAIR.txt", makespanFAIR);
+    }
+
+    @Test
+    public void experimentIncreaseHeterogeneitySimulateClusterProblem() {
+        // with simulated cluster problem
+        // experiment with different standar deviations of CPU
+        // from homogeneous to very heterogeneous
+        Functions.clearLog();
+
+        MRConfigs.numNodes = 10;
+        MRConfigs.debugLog = true;
+        MRConfigs.displayLog = true;
+
+        MRConfigs.meanTaskLength = 40;
+        MRConfigs.stdDevTaskLength = 10;
+        MRConfigs.numUsers = 2;
+
+        MRConfigs.meanCPU = 12;
+        MRConfigs.incrementConfig = true;
+        MRConfigs.isHomogeneous = false;
+
+        int numExperiments = 30;
+        int numVariations = 11;
+
+        double[][] makespanFRAS = new double[numExperiments][numVariations];
+        double[][] makespanDefault = new double[numExperiments][numVariations];
+        double[][] makespanFAIR = new double[numExperiments][numVariations];
+
+        int expVariation = 3;
+
+        for (int var = 0; var < numVariations; var++) {
+            MRConfigs.stdDevCPU = var;
+
+            for (int n = 0; n < numExperiments; n++) {
+                Cluster cluster = new Cluster();
+                cluster.randomInit();
+                cluster.simulateClusterProblem();
+
+                for (int exp = 0; exp < expVariation; exp++) {
+                    // reset blockID
+                    cluster.resetCluster();
+
+                    switch (exp) {
+                        case 0:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FAIR;
+                            break;
+                        case 1:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.DEFAULT;
+                            break;
+                        case 2:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FRAS;
+                    }
+
+                    HDFS.put();
+
+                    // see the blocks on each node
+                    for (int i = 0; i < MRConfigs.numNodes; i++) {
+                        Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+                    }
+
+                    MapReduce.runMR();
+
+                    Log.debug("==========================================");
+                    System.out.println("Experiment number " + n + " variation number " + var + " Node number: "
+                            + MRConfigs.numNodes + "Standard Deviation: " + MRConfigs.stdDevCPU
+                            + " Total makespan: " + Cluster.totalMakeSpan);
+
+                    switch (exp) {
+                        case 0:
+                            makespanFAIR[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 1:
+                            makespanDefault[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 2:
+                            makespanFRAS[n][var] = Cluster.totalMakeSpan;
+                    }
+                }
+            }
+        }
+
+        Functions.printArrayToFile("makespanFRAS.txt", makespanFRAS);
+        Functions.printArrayToFile("makespanDefault.txt", makespanDefault);
+        Functions.printArrayToFile("makespanFAIR.txt", makespanFAIR);
+    }
+
+    @Test
+    public void experimentHomogeneousIncreasingJobLengthVariation() {
+        // with simulated cluster problem
+        // experiment with different standar deviations of CPU
+        // from homogeneous to very heterogeneous
+        Functions.clearLog();
+
+        MRConfigs.numNodes = 10;
+        MRConfigs.debugLog = true;
+        MRConfigs.displayLog = true;
+
+        MRConfigs.meanTaskLength = 40;
+        MRConfigs.stdDevTaskLength = 10;
+        MRConfigs.numUsers = 2;
+
+        MRConfigs.meanCPU = 12;
+        MRConfigs.isHomogeneous = true;
+
+        int numExperiments = 30;
+        int numVariations = 11;
+
+        double[][] makespanFRAS = new double[numExperiments][numVariations];
+        double[][] makespanDefault = new double[numExperiments][numVariations];
+        double[][] makespanFAIR = new double[numExperiments][numVariations];
+
+        int expVariation = 3;
+
+        for (int var = 0; var < numVariations; var++) {
+            MRConfigs.meanTaskLength = 100 * (var + 1);
+            MRConfigs.stdDevTaskLength = 30 * (var + 1);
+
+            for (int n = 0; n < numExperiments; n++) {
+                Cluster cluster = new Cluster();
+                cluster.randomInit();
+
+                for (int exp = 0; exp < expVariation; exp++) {
+                    // reset blockID
+                    cluster.resetCluster();
+
+                    switch (exp) {
+                        case 0:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FAIR;
+                            break;
+                        case 1:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.DEFAULT;
+                            break;
+                        case 2:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FRAS;
+                    }
+
+                    HDFS.put();
+
+                    // see the blocks on each node
+                    for (int i = 0; i < MRConfigs.numNodes; i++) {
+                        Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+                    }
+
+                    MapReduce.runMR();
+
+                    Log.debug("==========================================");
+                    System.out.println("Experiment number " + n + " variation number " + var + " Node number: "
+                            + MRConfigs.numNodes + "Standard Deviation: " + MRConfigs.stdDevCPU
+                            + " Total makespan: " + Cluster.totalMakeSpan);
+
+                    switch (exp) {
+                        case 0:
+                            makespanFAIR[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 1:
+                            makespanDefault[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 2:
+                            makespanFRAS[n][var] = Cluster.totalMakeSpan;
+                    }
+                }
+            }
+        }
+
+        Functions.printArrayToFile("makespanFRAS.txt", makespanFRAS);
+        Functions.printArrayToFile("makespanDefault.txt", makespanDefault);
+        Functions.printArrayToFile("makespanFAIR.txt", makespanFAIR);
+    }
+
+    @Test
+    public void experimentHomogeneousIncreasingJobLengthVariationSimulateClusterProblem() {
+        // with simulated cluster problem
+        // experiment with different standar deviations of CPU
+        // from homogeneous to very heterogeneous
+        Functions.clearLog();
+
+        MRConfigs.numNodes = 10;
+        MRConfigs.debugLog = true;
+        MRConfigs.displayLog = true;
+
+        MRConfigs.meanTaskLength = 40;
+        MRConfigs.stdDevTaskLength = 10;
+        MRConfigs.numUsers = 2;
+
+        MRConfigs.meanCPU = 12;
+        MRConfigs.isHomogeneous = true;
+
+        int numExperiments = 30;
+        int numVariations = 11;
+
+        double[][] makespanFRAS = new double[numExperiments][numVariations];
+        double[][] makespanDefault = new double[numExperiments][numVariations];
+        double[][] makespanFAIR = new double[numExperiments][numVariations];
+
+        int expVariation = 3;
+
+        for (int var = 0; var < numVariations; var++) {
+            MRConfigs.meanTaskLength = 10 * (var + 1);
+            MRConfigs.stdDevTaskLength = 3 * (var + 1);
+
+            for (int n = 0; n < numExperiments; n++) {
+                Cluster cluster = new Cluster();
+                cluster.randomInit();
+                cluster.simulateClusterProblem();
+
+                for (int exp = 0; exp < expVariation; exp++) {
+                    // reset blockID
+                    cluster.resetCluster();
+
+                    switch (exp) {
+                        case 0:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FAIR;
+                            break;
+                        case 1:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.DEFAULT;
+                            break;
+                        case 2:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FRAS;
+                    }
+
+                    HDFS.put();
+
+                    // see the blocks on each node
+                    for (int i = 0; i < MRConfigs.numNodes; i++) {
+                        Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+                    }
+
+                    MapReduce.runMR();
+
+                    Log.debug("==========================================");
+                    System.out.println("Experiment number " + n + " variation number " + var + " Node number: "
+                            + MRConfigs.numNodes + "Standard Deviation: " + MRConfigs.stdDevCPU
+                            + " Total makespan: " + Cluster.totalMakeSpan);
+
+                    switch (exp) {
+                        case 0:
+                            makespanFAIR[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 1:
+                            makespanDefault[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 2:
+                            makespanFRAS[n][var] = Cluster.totalMakeSpan;
+                    }
+                }
+            }
+        }
+
+        Functions.printArrayToFile("makespanFRAS.txt", makespanFRAS);
+        Functions.printArrayToFile("makespanDefault.txt", makespanDefault);
+        Functions.printArrayToFile("makespanFAIR.txt", makespanFAIR);
+    }
+
+    @Test
+    public void experimentHeterogeneousIncreasingJobLengthVariation() {
+        // with simulated cluster problem
+        // experiment with different standar deviations of CPU
+        // from homogeneous to very heterogeneous
+        Functions.clearLog();
+
+        MRConfigs.numNodes = 10;
+        MRConfigs.debugLog = true;
+        MRConfigs.displayLog = true;
+
+        MRConfigs.meanTaskLength = 40;
+        MRConfigs.stdDevTaskLength = 10;
+        MRConfigs.numUsers = 2;
+
+        MRConfigs.meanCPU = 12;
+        MRConfigs.isHomogeneous = false;
+
+        int numExperiments = 30;
+        int numVariations = 11;
+
+        double[][] makespanFRAS = new double[numExperiments][numVariations];
+        double[][] makespanDefault = new double[numExperiments][numVariations];
+        double[][] makespanFAIR = new double[numExperiments][numVariations];
+
+        int expVariation = 3;
+
+        for (int var = 0; var < numVariations; var++) {
+            MRConfigs.meanTaskLength = 100 * (var + 1);
+            MRConfigs.stdDevTaskLength = 30 * (var + 1);
+
+            for (int n = 0; n < numExperiments; n++) {
+                Cluster cluster = new Cluster();
+                cluster.randomInit();
+
+                for (int exp = 0; exp < expVariation; exp++) {
+                    // reset blockID
+                    cluster.resetCluster();
+
+                    switch (exp) {
+                        case 0:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FAIR;
+                            break;
+                        case 1:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.DEFAULT;
+                            break;
+                        case 2:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FRAS;
+                    }
+
+                    HDFS.put();
+
+                    // see the blocks on each node
+                    for (int i = 0; i < MRConfigs.numNodes; i++) {
+                        Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+                    }
+
+                    MapReduce.runMR();
+
+                    Log.debug("==========================================");
+                    System.out.println("Experiment number " + n + " variation number " + var + " Node number: "
+                            + MRConfigs.numNodes + "Standard Deviation: " + MRConfigs.stdDevCPU
+                            + " Total makespan: " + Cluster.totalMakeSpan);
+
+                    switch (exp) {
+                        case 0:
+                            makespanFAIR[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 1:
+                            makespanDefault[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 2:
+                            makespanFRAS[n][var] = Cluster.totalMakeSpan;
+                    }
+                }
+            }
+        }
+
+        Functions.printArrayToFile("makespanFRAS.txt", makespanFRAS);
+        Functions.printArrayToFile("makespanDefault.txt", makespanDefault);
+        Functions.printArrayToFile("makespanFAIR.txt", makespanFAIR);
+    }
+
+    @Test
+    public void experimentHeterogeneousIncreasingJobLengthVariationSimulateClusterProblem() {
+        // with simulated cluster problem
+        // experiment with different standar deviations of CPU
+        // from homogeneous to very heterogeneous
+        Functions.clearLog();
+
+        MRConfigs.numNodes = 10; // this might be the culprit on the performance degradation when the job lengths are long
+        MRConfigs.debugLog = true;
+        MRConfigs.displayLog = true;
+
+        MRConfigs.numUsers = 2;
+
+        MRConfigs.meanCPU = 12;
+        MRConfigs.stdDevCPU = 2;
+        MRConfigs.isHomogeneous = false;
+
+        boolean isShort = false;
+
+        int numExperiments;
+        int numVariations;
+
+        if (isShort) {
+            numExperiments = 5;
+            numVariations = 8;
+        } else {
+            numExperiments = 30;
+            numVariations = 11;
+        }
+
+        double[][] makespanFRAS = new double[numExperiments][numVariations];
+        double[][] makespanDefault = new double[numExperiments][numVariations];
+        double[][] makespanFAIR = new double[numExperiments][numVariations];
+
+        int expVariation = 3;
+
+        for (int var = 0; var < numVariations; var++) {
+            MRConfigs.meanTaskLength = 100 * (var + 1);
+            MRConfigs.stdDevTaskLength = 30 * (var + 1);
+
+            for (int n = 0; n < numExperiments; n++) {
+                Cluster cluster = new Cluster();
+                cluster.randomInit();
+                cluster.simulateClusterProblem();
+
+                for (int exp = 0; exp < expVariation; exp++) {
+                    // reset blockID
+                    cluster.resetCluster();
+
+                    switch (exp) {
+                        case 0:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FRAS;
+                            break;
+                        case 1:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FAIR;
+                            break;
+                        case 2:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.DEFAULT;
+                    }
+
+                    HDFS.put();
+
+                    // see the blocks on each node
+                    for (int i = 0; i < MRConfigs.numNodes; i++) {
+                        Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+                    }
+
+                    MapReduce.runMR();
+
+                    Log.debug("==========================================");
+                    System.out.println("Experiment number " + n + " variation number " + var + " Node number: "
+                            + MRConfigs.numNodes + " Job length mean: " + MRConfigs.meanTaskLength
+                            + "Job standard deviation: " + MRConfigs.stdDevTaskLength
+                            + " Total makespan: " + Cluster.totalMakeSpan);
+
+                    switch (exp) {
+                        case 0:
+                            makespanFRAS[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 1:
+                            makespanFAIR[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 2:
+                            makespanDefault[n][var] = Cluster.totalMakeSpan;
+                    }
+                }
+            }
+        }
+
+        Functions.printArrayToFile("makespanFRAS.txt", makespanFRAS);
+        Functions.printArrayToFile("makespanDefault.txt", makespanDefault);
+        Functions.printArrayToFile("makespanFAIR.txt", makespanFAIR);
+    }
+
+    @Test
+    public void experimentHeterogeneousIncreasingJobLengthVariationSimulateClusterProblemManyNodes() {
+        // with simulated cluster problem
+        // experiment with different standar deviations of CPU
+        // from homogeneous to very heterogeneous
+        Functions.clearLog();
+
+        MRConfigs.numNodes = 200; // this might be the culprit on the performance degradation when the job lengths are long
+        MRConfigs.numRacks = 10;
+
+        MRConfigs.debugLog = true;
+        MRConfigs.displayLog = true;
+
+        MRConfigs.numUsers = 2;
+
+        MRConfigs.meanCPU = 12;
+        MRConfigs.isHomogeneous = false;
+
+        int numExperiments = 30;
+        int numVariations = 11;
+
+        double[][] makespanFRAS = new double[numExperiments][numVariations];
+        double[][] makespanDefault = new double[numExperiments][numVariations];
+        double[][] makespanFAIR = new double[numExperiments][numVariations];
+
+        int expVariation = 3;
+
+        MRConfigs.stdDevTaskLength = 3;
+        for (int var = 0; var < numVariations; var++) {
+            MRConfigs.meanTaskLength = 100*(var+1);
+            MRConfigs.stdDevTaskLength = 30*(var+1);
+
+            for (int n = 0; n < numExperiments; n++) {
+                Cluster cluster = new Cluster();
+                cluster.randomInit();
+                cluster.simulateClusterProblem();
+
+                for (int exp = 0; exp < expVariation; exp++) {
+                    // reset blockID
+                    cluster.resetCluster();
+
+                    switch (exp) {
+                        case 0:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FAIR;
+                            break;
+                        case 1:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.DEFAULT;
+                            break;
+                        case 2:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FRAS;
+                    }
+
+                    HDFS.put();
+
+                    // see the blocks on each node
+                    for (int i = 0; i < MRConfigs.numNodes; i++) {
+                        Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+                    }
+
+                    MapReduce.runMR();
+
+                    Log.debug("==========================================");
+                    System.out.println("Experiment number " + n + " variation number " + var + " Node number: "
+                            + MRConfigs.numNodes + " Job length mean: " + MRConfigs.meanTaskLength
+                            + " Total makespan: " + Cluster.totalMakeSpan);
+
+                    switch (exp) {
+                        case 0:
+                            makespanFAIR[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 1:
+                            makespanDefault[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 2:
+                            makespanFRAS[n][var] = Cluster.totalMakeSpan;
+                    }
+                }
+            }
+        }
+
+        Functions.printArrayToFile("makespanFRAS.txt", makespanFRAS);
+        Functions.printArrayToFile("makespanDefault.txt", makespanDefault);
+        Functions.printArrayToFile("makespanFAIR.txt", makespanFAIR);
+    }
+
+    @Test
+    public void experimentHomogeneousIncreasingNumberUser() {
+        // with simulated cluster problem
+        // experiment with different standar deviations of CPU
+        // from homogeneous to very heterogeneous
+        Functions.clearLog();
+
+        MRConfigs.numNodes = 10; // this might be the culprit on the performance degradation when the job lengths are long
+        MRConfigs.debugLog = true;
+        MRConfigs.displayLog = true;
+
+        MRConfigs.meanCPU = 12;
+        MRConfigs.stdDevCPU = 2;
+        MRConfigs.isHomogeneous = true;
+
+        MRConfigs.meanTaskLength = 100;
+        MRConfigs.stdDevTaskLength = 10;
+
+        boolean isShort = false;
+
+        int numExperiments;
+        int numVariations;
+
+        if (isShort) {
+            numExperiments = 5;
+            numVariations = 8;
+        } else {
+            numExperiments = 30;
+            numVariations = 11;
+        }
+
+        double[][] makespanFRAS = new double[numExperiments][numVariations];
+        double[][] makespanDefault = new double[numExperiments][numVariations];
+        double[][] makespanFAIR = new double[numExperiments][numVariations];
+
+        int expVariation = 3;
+
+        for (int var = 0; var < numVariations; var++) {
+            MRConfigs.numUsers = var + 1;
+            Cluster cluster = new Cluster();
+            Cluster.users = new User[MRConfigs.numUsers];
+            Cluster.taskLengths = new int[MRConfigs.numUsers][4];
+
+            for (int n = 0; n < numExperiments; n++) {
+                cluster.randomInit();
+
+                for (int exp = 0; exp < expVariation; exp++) {
+                    // reset blockID
+                    cluster.resetCluster();
+
+                    switch (exp) {
+                        case 0:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FRAS;
+                            break;
+                        case 1:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FAIR;
+                            break;
+                        case 2:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.DEFAULT;
+                    }
+
+                    HDFS.put();
+
+                    // see the blocks on each node
+                    for (int i = 0; i < MRConfigs.numNodes; i++) {
+                        Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+                    }
+
+                    MapReduce.runMR();
+
+                    Log.debug("==========================================");
+                    System.out.println("Experiment number " + n
+                            + " variation number " + var
+                            + " Number of users: " + MRConfigs.numUsers
+                            + " Total makespan: " + Cluster.totalMakeSpan);
+
+                    switch (exp) {
+                        case 0:
+                            makespanFRAS[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 1:
+                            makespanFAIR[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 2:
+                            makespanDefault[n][var] = Cluster.totalMakeSpan;
+                    }
+                }
+            }
+        }
+
+        Functions.printArrayToFile("makespanFRAS.txt", makespanFRAS);
+        Functions.printArrayToFile("makespanDefault.txt", makespanDefault);
+        Functions.printArrayToFile("makespanFAIR.txt", makespanFAIR);
+    }
+
+    @Test
+    public void experimentHomogeneousIncreasingNumberUserClusterProblem() {
+        // with simulated cluster problem
+        // experiment with different standar deviations of CPU
+        // from homogeneous to very heterogeneous
+        Functions.clearLog();
+
+        MRConfigs.numNodes = 10; // this might be the culprit on the performance degradation when the job lengths are long
+        MRConfigs.debugLog = true;
+        MRConfigs.displayLog = true;
+
+        MRConfigs.meanCPU = 12;
+        MRConfigs.stdDevCPU = 2;
+        MRConfigs.isHomogeneous = true;
+
+        MRConfigs.meanTaskLength = 100;
+        MRConfigs.stdDevTaskLength = 10;
+
+        boolean isShort = false;
+
+        int numExperiments;
+        int numVariations;
+
+        if (isShort) {
+            numExperiments = 5;
+            numVariations = 8;
+        } else {
+            numExperiments = 30;
+            numVariations = 11;
+        }
+
+        double[][] makespanFRAS = new double[numExperiments][numVariations];
+        double[][] makespanDefault = new double[numExperiments][numVariations];
+        double[][] makespanFAIR = new double[numExperiments][numVariations];
+
+        int expVariation = 3;
+
+        for (int var = 0; var < numVariations; var++) {
+            MRConfigs.numUsers = var + 1;
+            Cluster cluster = new Cluster();
+            Cluster.users = new User[MRConfigs.numUsers];
+            Cluster.taskLengths = new int[MRConfigs.numUsers][4];
+
+            for (int n = 0; n < numExperiments; n++) {
+                cluster.randomInit();
+                cluster.simulateClusterProblem();
+
+                for (int exp = 0; exp < expVariation; exp++) {
+                    // reset blockID
+                    cluster.resetCluster();
+
+                    switch (exp) {
+                        case 0:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FRAS;
+                            break;
+                        case 1:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FAIR;
+                            break;
+                        case 2:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.DEFAULT;
+                    }
+
+                    HDFS.put();
+
+                    // see the blocks on each node
+                    for (int i = 0; i < MRConfigs.numNodes; i++) {
+                        Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+                    }
+
+                    MapReduce.runMR();
+
+                    Log.debug("==========================================");
+                    System.out.println("Experiment number " + n
+                            + " variation number " + var
+                            + " Number of users: " + MRConfigs.numUsers
+                            + " Total makespan: " + Cluster.totalMakeSpan);
+
+                    switch (exp) {
+                        case 0:
+                            makespanFRAS[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 1:
+                            makespanFAIR[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 2:
+                            makespanDefault[n][var] = Cluster.totalMakeSpan;
+                    }
+                }
+            }
+        }
+
+        Functions.printArrayToFile("makespanFRAS.txt", makespanFRAS);
+        Functions.printArrayToFile("makespanDefault.txt", makespanDefault);
+        Functions.printArrayToFile("makespanFAIR.txt", makespanFAIR);
+    }
+
+    @Test
+    public void experimentHeterogeneousIncreasingNumberUser() {
+        // with simulated cluster problem
+        // experiment with different standar deviations of CPU
+        // from homogeneous to very heterogeneous
+        Functions.clearLog();
+
+        MRConfigs.numNodes = 10; // this might be the culprit on the performance degradation when the job lengths are long
+        MRConfigs.debugLog = true;
+        MRConfigs.displayLog = true;
+
+        MRConfigs.meanCPU = 12;
+        MRConfigs.stdDevCPU = 2;
+        MRConfigs.isHomogeneous = false;
+
+        MRConfigs.meanTaskLength = 100;
+        MRConfigs.stdDevTaskLength = 10;
+
+        boolean isShort = false;
+
+        int numExperiments;
+        int numVariations;
+
+        if (isShort) {
+            numExperiments = 5;
+            numVariations = 8;
+        } else {
+            numExperiments = 30;
+            numVariations = 11;
+        }
+
+        double[][] makespanFRAS = new double[numExperiments][numVariations];
+        double[][] makespanDefault = new double[numExperiments][numVariations];
+        double[][] makespanFAIR = new double[numExperiments][numVariations];
+
+        int expVariation = 3;
+
+        for (int var = 0; var < numVariations; var++) {
+            MRConfigs.numUsers = var + 1;
+            Cluster cluster = new Cluster();
+            Cluster.users = new User[MRConfigs.numUsers];
+            Cluster.taskLengths = new int[MRConfigs.numUsers][4];
+
+            for (int n = 0; n < numExperiments; n++) {
+                cluster.randomInit();
+
+                for (int exp = 0; exp < expVariation; exp++) {
+                    // reset blockID
+                    cluster.resetCluster();
+
+                    switch (exp) {
+                        case 0:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FRAS;
+                            break;
+                        case 1:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FAIR;
+                            break;
+                        case 2:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.DEFAULT;
+                    }
+
+                    HDFS.put();
+
+                    // see the blocks on each node
+                    for (int i = 0; i < MRConfigs.numNodes; i++) {
+                        Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+                    }
+
+                    MapReduce.runMR();
+
+                    Log.debug("==========================================");
+                    System.out.println("Experiment number " + n
+                            + " variation number " + var
+                            + " Number of users: " + MRConfigs.numUsers
+                            + " Total makespan: " + Cluster.totalMakeSpan);
+
+                    switch (exp) {
+                        case 0:
+                            makespanFRAS[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 1:
+                            makespanFAIR[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 2:
+                            makespanDefault[n][var] = Cluster.totalMakeSpan;
+                    }
+                }
+            }
+        }
+
+        Functions.printArrayToFile("makespanFRAS.txt", makespanFRAS);
+        Functions.printArrayToFile("makespanDefault.txt", makespanDefault);
+        Functions.printArrayToFile("makespanFAIR.txt", makespanFAIR);
+    }
+
+    @Test
+    public void experimentHeterogeneousIncreasingNumberUserClusterProblem() {
+        // with simulated cluster problem
+        // experiment with different standar deviations of CPU
+        // from homogeneous to very heterogeneous
+        Functions.clearLog();
+
+        MRConfigs.numNodes = 10; // this might be the culprit on the performance degradation when the job lengths are long
+        MRConfigs.debugLog = true;
+        MRConfigs.displayLog = true;
+
+        MRConfigs.meanCPU = 12;
+        MRConfigs.stdDevCPU = 2;
+        MRConfigs.isHomogeneous = false;
+
+        MRConfigs.meanTaskLength = 100;
+        MRConfigs.stdDevTaskLength = 10;
+
+        boolean isShort = false;
+
+        int numExperiments;
+        int numVariations;
+
+        if (isShort) {
+            numExperiments = 5;
+            numVariations = 8;
+        } else {
+            numExperiments = 30;
+            numVariations = 11;
+        }
+
+        double[][] makespanFRAS = new double[numExperiments][numVariations];
+        double[][] makespanDefault = new double[numExperiments][numVariations];
+        double[][] makespanFAIR = new double[numExperiments][numVariations];
+
+        int expVariation = 3;
+
+        for (int var = 0; var < numVariations; var++) {
+            MRConfigs.numUsers = var + 1;
+            Cluster cluster = new Cluster();
+            Cluster.users = new User[MRConfigs.numUsers];
+            Cluster.taskLengths = new int[MRConfigs.numUsers][4];
+
+            for (int n = 0; n < numExperiments; n++) {
+                cluster.randomInit();
+                cluster.simulateClusterProblem();
+
+                for (int exp = 0; exp < expVariation; exp++) {
+                    // reset blockID
+                    cluster.resetCluster();
+
+                    switch (exp) {
+                        case 0:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FRAS;
+                            break;
+                        case 1:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.FAIR;
+                            break;
+                        case 2:
+                            MRConfigs.blockPlacementStrategy = BlockPlacementStrategy.DEFAULT;
+                    }
+
+                    HDFS.put();
+
+                    // see the blocks on each node
+                    for (int i = 0; i < MRConfigs.numNodes; i++) {
+                        Log.debug("Node " + i + " has " + Cluster.nodes[i].getDisk().getBlocks().size() + " blocks");
+                    }
+
+                    MapReduce.runMR();
+
+                    Log.debug("==========================================");
+                    System.out.println("Experiment number " + n
+                            + " variation number " + var
+                            + " Number of users: " + MRConfigs.numUsers
+                            + " Total makespan: " + Cluster.totalMakeSpan);
+
+                    switch (exp) {
+                        case 0:
+                            makespanFRAS[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 1:
+                            makespanFAIR[n][var] = Cluster.totalMakeSpan;
+                            break;
+                        case 2:
+                            makespanDefault[n][var] = Cluster.totalMakeSpan;
                     }
                 }
             }

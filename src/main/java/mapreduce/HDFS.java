@@ -100,16 +100,29 @@ public class HDFS {
         int nodeNumber = 0;
 
         switch (MRConfigs.blockPlacementStrategy) {
-            case DEFAULT -> nodeNumber = getRandomNodeSameRack(0);
-            case FRAS -> nodeNumber = Functions.randGNNRoulette();
-            case FAIR -> nodeNumber = getRandomNode();
+            case DEFAULT:
+                nodeNumber = getRandomNodeSameRack(0);
+                while (!Cluster.nodes[nodeNumber].isReachable())
+                    nodeNumber = getRandomNodeSameRack(0);
+                break;
+            case FRAS:
+                nodeNumber = Functions.randGNNRoulette();
+                while (!Cluster.nodes[nodeNumber].isReachable())
+                    nodeNumber = Functions.randGNNRoulette();
+                break;
+            case FAIR:
+                nodeNumber = getRandomNode();
+                while (!Cluster.nodes[nodeNumber].isReachable())
+                    nodeNumber = getRandomNode();
+                break;
         }
 
-        if (MRConfigs.blockPlacementStrategy == BlockPlacementStrategy.DEFAULT) {
-            nodeNumber = getRandomNodeSameRack(0);
-        } else if (MRConfigs.blockPlacementStrategy == BlockPlacementStrategy.FRAS) { // Fuzzy Resource Aware Block Placement
-            nodeNumber = Functions.randGNNRoulette();  // arwan todo: we can play around here
-        }
+//        if (MRConfigs.blockPlacementStrategy == BlockPlacementStrategy.DEFAULT) {
+//            nodeNumber = getRandomNodeSameRack(0);
+//        } else if (MRConfigs.blockPlacementStrategy == BlockPlacementStrategy.FRAS) { // Fuzzy Resource Aware Block Placement
+//            nodeNumber = Functions.randGNNRoulette();  // arwan todo: we can play around here
+//        }
+
         Log.debug("Original block number " + block.getBlockID() + " distributed to node " + nodeNumber);
 
         Cluster.nodes[0].sendData(Cluster.nodes[nodeNumber], block);
@@ -121,16 +134,25 @@ public class HDFS {
         // replicate the block and send to other nodes
         // send the first replica to other node in the same rack
         int rep1 = getRandomNodeSameRack(nodeNumber);
+        while (!Cluster.nodes[rep1].isReachable())
+            rep1 = getRandomNodeSameRack(nodeNumber);
+
         Cluster.nodes[0].sendData(Cluster.nodes[rep1], block);
 
         Log.debug("Distribute block number " + block.getBlockID() + " to the different rack");
 
         // send the second replica to other node in the different rack
         int nodeOtherRack = getRandomNodeDifferentRack(nodeNumber);
+        while (!Cluster.nodes[nodeNumber].isReachable())
+            nodeOtherRack = getRandomNodeDifferentRack(nodeNumber);
+
         Cluster.nodes[0].sendData(Cluster.nodes[nodeOtherRack], block);
 
         // send the third replica to other node in the different rack
         int rep2 = getRandomNodeSameRack(nodeOtherRack);
+        while (!Cluster.nodes[nodeNumber].isReachable())
+            rep2 = getRandomNodeSameRack(nodeOtherRack);
+
         Cluster.nodes[0].sendData(Cluster.nodes[rep2], block);
 
         // put in replication data

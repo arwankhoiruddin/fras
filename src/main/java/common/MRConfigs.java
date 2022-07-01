@@ -9,10 +9,13 @@ import yarn.Scheduler;
 public class MRConfigs {
     public static String logPath = "C:\\Users\\arwan\\Documents\\log.txt";
 
-    public static boolean displayLog = false;
-    public static boolean debugLog = false;
+    public static boolean displayLog = true;
+    public static boolean debugLog = true;
     public static boolean randomData = false;
+
     public static boolean simulateClusterProblems = false;
+    public static double nodeProblemProbability = 0.15;
+
     public static int heartbeat = 3; // minutes
 
     public static int numRacks = 2;
@@ -22,6 +25,13 @@ public class MRConfigs {
     public static int diskSpacePerNodes = 60;
     public static double blockSize = 128;
     public static int numNodes = 8;
+
+    // weighting
+    public static int ownCPUWeight = 10;
+    public static int ownRAMWeight = 5;
+    public static int neighCPUWeight = 5;
+    public static int neighRAMWeight = 3;
+    public static int pingWeight = 10;
 
     public static ReplicationStrategy replicationStrategy = ReplicationStrategy.REPLICATION;
 
@@ -49,6 +59,7 @@ public class MRConfigs {
     public static int maxLink = 25;
     public static int meanLink = 15;
     public static int stdLink = 10;
+    public static double maxPing = 100;
 
     // CPU and RAM configurations
 
